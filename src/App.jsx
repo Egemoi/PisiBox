@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { horrorMovies } from "./data/horrorMovies";
 const categories = [
   { name: "Korku", count: 348, icon: "☠", tone: "red", character: "👻", tag: "Karanlık ve ürpertici" },
   { name: "Aksiyon", count: 729, icon: "🥷", tone: "blue", character: "🥷", tag: "Adrenalin dolu" },
@@ -75,6 +76,8 @@ function App() {
   const [profilePreview, setProfilePreview] = useState("");
   const [profileError, setProfileError] = useState("");
   const [profileLoading, setProfileLoading] = useState(false);\n  const [selectedTitle, setSelectedTitle] = useState(null);\n  const [favorites, setFavorites] = useState(() => JSON.parse(localStorage.getItem("pisibox_favorites") || "[]"));\n  const [ratings, setRatings] = useState(() => JSON.parse(localStorage.getItem("pisibox_ratings") || "{}"));\n  const [profilePage, setProfilePage] = useState(false);
+  const [categoryPage, setCategoryPage] = useState(null);
+  const [movieFilter, setMovieFilter] = useState("");
 
   const slide = slides[slideIndex];
 
@@ -265,7 +268,21 @@ function App() {
         </div>
       </header>
 
-      <main id="top">
+      <main id="top">{categoryPage === "Korku" && <section className="category-page">
+  <div className="category-page-head">
+    <button className="back-btn" onClick={()=>setCategoryPage(null)}>← Ana Sayfa</button>
+    <span className="section-kicker">PISIBOX · KORKU</span>
+    <h1>En Popüler 300 Korku Filmi</h1>
+    <p>Seçilmiş 300 korku klasiği ve modern yapımı keşfet.</p>
+    <div className="movie-filter"><span>⌕</span><input value={movieFilter} onChange={e=>setMovieFilter(e.target.value)} placeholder="Korku filmlerinde ara..." /></div>
+  </div>
+  <div className="movie-grid">{horrorMovies.filter(m=>m.title.toLocaleLowerCase("tr-TR").includes(movieFilter.toLocaleLowerCase("tr-TR"))).map(movie =>
+    <article className="movie-card" key={movie.id} onClick={()=>setSelectedTitle({id:"h"+movie.id,title:movie.title,type:"Film",year:movie.year,genre:["Korku"],rating:movie.rating,emoji:"👻",desc:movie.desc,poster:null})}>
+      <div className="movie-poster"><div className="movie-poster-art"><span>👻</span><b>{movie.title}</b></div>{movie.rating ? <strong>⭐ {movie.rating}</strong> : <strong>IMDb</strong>}</div>
+      <div className="movie-info"><h3>{movie.title}</h3><small>{movie.year} · {movie.rating ? "IMDb " + movie.rating : "IMDb puanı"}</small><p>{movie.desc}</p></div>
+    </article>
+  )}</div>
+</section>}
         <section className="hero">
           <div className="hero-copy">
             <div className="eyebrow"><span /> {slide.label}</div>
