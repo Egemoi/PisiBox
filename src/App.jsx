@@ -365,19 +365,21 @@ function App() {
                 <div className="poster-fallback"><span>🎬</span><small>Afiş bulunamadı</small></div>
               )}
               <strong>⭐ {movie.rating}</strong>
-            </div><div className="result-copy"><span className="result-kicker">{movie.categories.join(" · ")}</span><h2>{movie.title}</h2><small>{movie.year}</small><p>{movie.summary}</p><div className="platform-row">
-  <span className="platform-label">Nerede İzlenir?</span>
-  <span className="platform-badge netflix">Netflix</span>
-  <span className="platform-badge prime">Prime Video</span>
-  <span className="platform-badge disney">Disney+</span>
-  <span className="platform-badge blutv">BluTV</span>
-  <span className="platform-badge mubi">MUBI</span>
+            </div><div className="result-copy"><span className="result-kicker">{movie.categories.join(" · ")}</span><h2>{movie.title}</h2><small>{movie.year}</small><p>{movie.summary}</p><div style={{marginTop:16}}>
+  <div style={{fontSize:12,color:"rgba(255,255,255,.55)",fontWeight:600,marginBottom:8}}>Nerede İzlenir?</div>
+  <div style={{display:"flex",flexWrap:"wrap",gap:8,alignItems:"center"}}>
+    <span style={{display:"inline-flex",alignItems:"center",gap:6,padding:"4px 10px",borderRadius:999,fontSize:12,fontWeight:600,background:"rgba(255,255,255,.05)",border:"1px solid rgba(255,255,255,.1)",color:"rgba(255,255,255,.82)"}}><i style={{width:6,height:6,borderRadius:"50%",background:"#e50914",display:"inline-block"}} />Netflix</span>
+    <span style={{display:"inline-flex",alignItems:"center",gap:6,padding:"4px 10px",borderRadius:999,fontSize:12,fontWeight:600,background:"rgba(30,144,255,.07)",border:"1px solid rgba(255,255,255,.1)",color:"rgba(255,255,255,.82)"}}><i style={{width:6,height:6,borderRadius:"50%",background:"#1e90ff",display:"inline-block"}} />Prime Video</span>
+    <span style={{display:"inline-flex",alignItems:"center",gap:6,padding:"4px 10px",borderRadius:999,fontSize:12,fontWeight:600,background:"rgba(70,140,255,.07)",border:"1px solid rgba(255,255,255,.1)",color:"rgba(255,255,255,.82)"}}><i style={{width:6,height:6,borderRadius:"50%",background:"#5b9cff",display:"inline-block"}} />Disney+</span>
+    <span style={{display:"inline-flex",alignItems:"center",gap:6,padding:"4px 10px",borderRadius:999,fontSize:12,fontWeight:600,background:"rgba(40,180,130,.06)",border:"1px solid rgba(255,255,255,.1)",color:"rgba(255,255,255,.82)"}}><i style={{width:6,height:6,borderRadius:"50%",background:"#35c98b",display:"inline-block"}} />BluTV</span>
+    <span style={{display:"inline-flex",alignItems:"center",gap:6,padding:"4px 10px",borderRadius:999,fontSize:12,fontWeight:600,background:"rgba(180,80,255,.07)",border:"1px solid rgba(255,255,255,.1)",color:"rgba(255,255,255,.82)"}}><i style={{width:6,height:6,borderRadius:"50%",background:"#b65cff",display:"inline-block"}} />MUBI</span>
+  </div>
+  <p style={{margin:"8px 0 0",fontSize:11,color:"rgba(255,255,255,.42)"}}>Platform etiketleri keşif amaçlıdır; güncel katalog uygunluğu doğrulanmamıştır.</p>
 </div>
-<p className="platform-note">Platform etiketleri keşif amaçlıdır; güncel katalog uygunluğu doğrulanmamıştır.</p>
-<div className="result-actions">
+<div style={{display:"flex",flexWrap:"wrap",gap:12,alignItems:"center",marginTop:18}}>
   <button className="again" onClick={roll}>🎲 Bir daha at</button>
-  <button className="watchlist-action" onClick={isInWatchlist ? () => removeFromWatchlist(movie) : addToWatchlist}>{isInWatchlist ? "🔖 Listeden Çıkar" : "🔖 Listeme Ekle"}</button>
-  <button className="trailer-action" onClick={() => openTrailer(movie)}>🎬 Fragmanı İzle</button>
+  <button onClick={isInWatchlist ? () => removeFromWatchlist(movie) : addToWatchlist} style={{padding:"10px 16px",borderRadius:12,border:"1px solid rgba(255,255,255,.15)",background:"rgba(255,255,255,.08)",color:"#fff",fontWeight:500,cursor:"pointer",transition:"all .2s ease",backdropFilter:"blur(12px)"}} onMouseEnter={(e)=>e.currentTarget.style.background="rgba(255,255,255,.16)"} onMouseLeave={(e)=>e.currentTarget.style.background="rgba(255,255,255,.08)"}>{isInWatchlist ? "🔖 Listeden Çıkar" : "🔖 Listeme Ekle"}</button>
+  <button onClick={() => openTrailer(movie)} style={{padding:"10px 16px",borderRadius:12,border:"1px solid rgba(255,70,70,.2)",background:"rgba(220,38,38,.9)",color:"#fff",fontWeight:500,cursor:"pointer",transition:"all .2s ease",boxShadow:"0 10px 24px rgba(220,38,38,.2)"}} onMouseEnter={(e)=>e.currentTarget.style.background="rgba(220,38,38,1)"} onMouseLeave={(e)=>e.currentTarget.style.background="rgba(220,38,38,.9)"}>🎬 Fragmanı İzle</button>
 </div></div></div> : <div className="empty-result"><div className="film-icon">▣</div><h3>Henüz film yok.</h3><p>Zarı atarak senin için bir film önerelim!</p></div>}
         </section>
 {dailyMovie && (
