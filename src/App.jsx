@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { supabase } from "./lib/supabase";
 
 const categories = [
   { name: "Korku", count: 348, icon: "☠", tone: "red", character: "👻", tag: "Karanlık ve ürpertici" },
@@ -51,6 +52,13 @@ function App() {
   const [search, setSearch] = useState("");
   const [chatOpen, setChatOpen] = useState(true);
   const [message, setMessage] = useState("");
+  const [authMode, setAuthMode] = useState(null);
+  const [authEmail, setAuthEmail] = useState("");
+  const [authPassword, setAuthPassword] = useState("");
+  const [authName, setAuthName] = useState("");
+  const [authError, setAuthError] = useState("");
+  const [authLoading, setAuthLoading] = useState(false);
+  const [user, setUser] = useState(null);
 
   const slide = slides[slideIndex];
 
@@ -68,6 +76,63 @@ function App() {
       ),
     [search]
   );
+
+  useEffect(() => {
+    if (!supabase) return;
+    supabase.auth.getSession().then(({ data }) => setUser(data.session?.user ?? null));
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+    return () => listener.subscription.unsubscribe();
+  }, []);
+
+  const openAuth = (mode) => {
+    setAuthMode(mode);
+    setAuthError("");
+    setAuthEmail("");
+    setAuthPassword("");
+    setAuthName("");
+  };
+
+  const submitAuth = async (event) => {
+    event.preventDefault();
+    setAuthError("");
+    if (!supabase) {
+      setAuthError("Giriş sistemi henüz bağlanmadı. Supabase ayarlarını eklememiz gerekiyor.");
+      return;
+    }
+    setAuthLoading(true);
+    try {
+      if (authMode === "register") {
+        const { data, error } = await supabase.auth.signUp({
+          email: authEmail,
+          password: authPassword,
+          options: { data: { display_name: authName } },
+        });
+        if (error) throw error;
+        if (!data.session) {
+          setAuthError("Kayıt başarılı! E-posta adresini doğrulaman gerekiyorsa gelen kutunu kontrol et.");
+        } else {
+          setAuthMode(null);
+        }
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({
+          email: authEmail,
+          password: authPassword,
+        });
+        if (error) throw error;
+        setAuthMode(null);
+      }
+    } catch (error) {
+      setAuthError(error.message || "Bir hata oluştu.");
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const logout = async () => {
+    if (supabase) await supabase.auth.signOut();
+  };
 
   const sendMessage = (event) => {
     event.preventDefault();
@@ -97,8 +162,17 @@ function App() {
         </nav>
 
         <div className="nav-actions">
-          <button className="ghost-btn">Giriş Yap</button>
-          <button className="primary-btn">Kayıt Ol</button>
+          {user ? (
+            <>
+              <span className="user-badge">👤 {user.user_metadata?.display_name || user.email?.split("@")[0]}</span>
+              <button className="ghost-btn" onClick={logout}>Çıkış</button>
+            </>
+          ) : (
+            <>
+              <button className="ghost-btn" onClick={() => openAuth("login")}>Giriş Yap</button>
+              <button className="primary-btn" onClick={() => openAuth("register")}>Kayıt Ol</button>
+            </>
+          )}
         </div>
       </header>
 
@@ -199,6 +273,33 @@ function App() {
           <p>Film, dizi, anime ve manga dünyasını tek bir keşif deneyiminde buluşturan PisiBox.</p>
         </section>
       </main>
+
+
+      {authMode && (
+        <div className="auth-overlay" onMouseDown={(event) => {
+          if (event.target === event.currentTarget) setAuthMode(null);
+        }}>
+          <div className="auth-modal">
+            <button className="auth-close" onClick={() => setAuthMode(null)} aria-label="Kapat">×</button>
+            <div className="auth-logo">🐾 <span>Pisi<span>Box</span></span></div>
+            <span className="section-kicker">{authMode === "register" ? "PISIBOX'A KATIL" : "TEKRAR HOŞ GELDİN"}</span>
+            <h2>{authMode === "register" ? "Hesabını oluştur" : "Giriş yap"}</h2>
+            <p className="auth-subtitle">{authMode === "register" ? "Favorilerini ve keşiflerini hesabında sakla." : "PisiBox hesabına devam et."}</p>
+            <form onSubmit={submitAuth} className="auth-form">
+              {authMode === "register" && (
+                <label>Ad / kullanıcı adı<input value={authName} onChange={(e) => setAuthName(e.target.value)} placeholder="Mete" required /></label>
+              )}
+              <label>E-posta<input type="email" value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} placeholder="ornek@mail.com" required /></label>
+              <label>Şifre<input type="password" value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} placeholder="En az 6 karakter" minLength={6} required /></label>
+              {authError && <div className="auth-error">{authError}</div>}
+              <button className="primary-btn auth-submit" disabled={authLoading}>{authLoading ? "Bekle..." : authMode === "register" ? "Kayıt Ol" : "Giriş Yap"}</button>
+            </form>
+            <button className="auth-switch" onClick={() => openAuth(authMode === "register" ? "login" : "register")}>
+              {authMode === "register" ? "Zaten hesabın var mı? Giriş yap" : "Hesabın yok mu? Kayıt ol"}
+            </button>
+          </div>
+        </div>
+      )}
 
       {chatOpen ? (
         <aside className="chat" aria-label="PisiChat">
