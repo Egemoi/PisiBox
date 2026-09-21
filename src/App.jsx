@@ -22,6 +22,25 @@ const posterUrl = (title, year) => {
 const movies = Object.values([...moviesPart1, ...moviesPart2, ...moviesPart3, ...moviesPart4, ...moviesPart5, ...moviesPart6, ...moviesPart7, ...moviesPart8].reduce((map, item) => { map[item.title] = item; return map; }, {}));
 
 const categories = ["Tamamen Rastgele","Korku","Romantik","Aksiyon","Komedi","Dram","Anime","Bilim Kurgu","Fantastik","Gizem","Gerilim","Aile"];
+const WATCHLIST_KEY = "pisibox-watchlist";
+const WATCHED_KEY = "pisibox-watched";
+const SOUND_KEY = "pisibox-dice-sound";
+const movieKey = (item) => `${item?.title || ""}|${item?.year || ""}`;
+const readStorage = (key, fallback = []) => {
+  try { const value = window.localStorage.getItem(key); return value ? JSON.parse(value) : fallback; } catch { return fallback; }
+};
+const saveStorage = (key, value) => {
+  try { window.localStorage.setItem(key, JSON.stringify(value)); } catch (error) { console.error("PisiBox localStorage yazılamadı:", error); }
+};
+const featuredTitles = ["Pulp Fiction","The Shawshank Redemption","The Godfather","The Dark Knight","Inception","Interstellar","Fight Club","The Prestige","The Silence of the Lambs","Spirited Away","Parasite","Goodfellas","The Shining","Whiplash","The Truman Show","Rear Window","Mad Max: Fury Road","City of God","Taxi Driver","Django Unchained","The Good, the Bad and the Ugly","Memento"];
+const getDailyMovie = () => {
+  const pool = featuredTitles.map((title) => movies.find((item) => item.title === title)).filter(Boolean);
+  if (!pool.length) return movies[0] || null;
+  const day = new Date().toDateString();
+  let hash = 0;
+  for (const char of day) hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
+  return pool[hash % pool.length];
+};
 
 function App() {
   const [category, setCategory] = useState("Tamamen Rastgele");
@@ -30,6 +49,15 @@ function App() {
   const [posterLoading, setPosterLoading] = useState(false);
   const [infoPage, setInfoPage] = useState(null);
   const [cookieVisible, setCookieVisible] = useState(false);
+  const [watchlist, setWatchlist] = useState(() => readStorage(WATCHLIST_KEY));
+  const [watched, setWatched] = useState(() => readStorage(WATCHED_KEY));
+  const [watchlistOpen, setWatchlistOpen] = useState(false);
+  const [trailerMovie, setTrailerMovie] = useState(null);
+  const [soundEnabled, setSoundEnabled] = useState(() => {
+    try { const saved = window.localStorage.getItem(SOUND_KEY); return saved === null ? true : saved === "true"; } catch { return true; }
+  });
+  const [dailyPoster, setDailyPoster] = useState(null);
+  const dailyMovie = useMemo(() => getDailyMovie(), []);
 
   useEffect(() => {
     const consent = window.localStorage.getItem("pisibox-cookie-consent");
@@ -41,51 +69,119 @@ function App() {
     setCookieVisible(false);
   };
 
-  const available = useMemo(() => category === "Tamamen Rastgele" ? movies : movies.filter((item) => item.categories.includes(category)), [category]);
+  const watchedKeys = useMemo(() => new Set(watched.map((item) => movieKey(item))), [watched]);
 
-  const fetchPoster = async (selectedMovie) => {
+  const available = useMemo(() => {
+    const pool = category === "Tamamen Rastgele" ? movies : movies.filter((item) => item.categories.includes(category));
+    return pool.filter((item) => !watchedKeys.has(movieKey(item)));
+  }, [category, watchedKeys]);
+
+  const fetchPoster = async (selectedMovie, updateMain = true) => {
     if (!selectedMovie?.title) return null;
-
     const cacheKey = `${selectedMovie.title}|${selectedMovie.year}`;
     if (posterCache.has(cacheKey)) {
       const cached = posterCache.get(cacheKey);
-      setPoster(cached);
+      if (updateMain) setPoster(cached);
       return cached;
     }
-
-    setPosterLoading(true);
-    setPoster(null);
-
+    if (updateMain) { setPosterLoading(true); setPoster(null); }
     try {
       const response = await fetch(posterUrl(selectedMovie.title, selectedMovie.year));
       const data = await response.json();
       const url = data.Response === "True" && data.Poster && data.Poster !== "N/A" ? data.Poster : null;
       posterCache.set(cacheKey, url);
-      setPoster(url);
+      if (updateMain) setPoster(url);
       return url;
     } catch (error) {
       console.error("OMDb poster alınamadı:", error);
-      setPoster(null);
+      if (updateMain) setPoster(null);
       return null;
     } finally {
-      setPosterLoading(false);
+      if (updateMain) setPosterLoading(false);
     }
   };
 
-  const roll = async () => {
-    if (!available.length) return;
+  useEffect(() => {
+    if (dailyMovie) fetchPoster(dailyMovie, false).then(setDailyPoster);
+  }, [dailyMovie]);
 
-    const choices = available.length > 1
-      ? available.filter((item) => item.title !== movie?.title)
-      : available;
+  const playDiceSound = () => {
+    if (!soundEnabled) return;
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) return;
+      const context = new AudioContext();
+      const now = context.currentTime;
+      [0, 0.045, 0.09].forEach((offset, index) => {
+        const oscillator = context.createOscillator();
+        const gain = context.createGain();
+        oscillator.type = index === 1 ? "triangle" : "square";
+        oscillator.frequency.setValueAtTime(index === 1 ? 95 : 125, now + offset);
+        oscillator.frequency.exponentialRampToValueAtTime(55, now + offset + 0.07);
+        gain.gain.setValueAtTime(0.0001, now + offset);
+        gain.gain.exponentialRampToValueAtTime(0.07, now + offset + 0.006);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + offset + 0.075);
+        oscillator.connect(gain).connect(context.destination);
+        oscillator.start(now + offset);
+        oscillator.stop(now + offset + 0.08);
+      });
+      setTimeout(() => context.close(), 300);
+    } catch (error) {
+      console.error("Zar sesi başlatılamadı:", error);
+    }
+  };
 
-    const selectedMovie = choices[Math.floor(Math.random() * choices.length)];
+  const toggleSound = () => {
+    const next = !soundEnabled;
+    setSoundEnabled(next);
+    try { window.localStorage.setItem(SOUND_KEY, String(next)); } catch {}
+  };
+
+  const roll = (watchedList = watched) => {
+    const watchedSet = new Set(watchedList.map((item) => movieKey(item)));
+    const pool = (category === "Tamamen Rastgele" ? movies : movies.filter((item) => item.categories.includes(category)))
+      .filter((item) => !watchedSet.has(movieKey(item)));
+    if (!pool.length) return;
+    const choices = pool.length > 1 ? pool.filter((item) => movieKey(item) !== movieKey(movie)) : pool;
+    const selectedMovie = choices.length ? choices[Math.floor(Math.random() * choices.length)] : pool[0];
+    playDiceSound();
     setMovie(selectedMovie);
-
-    // Poster isteğini hemen başlat; film sonucu beklemeden ekrana gelir.
     fetchPoster(selectedMovie);
   };
 
+  const addToWatchlist = () => {
+    if (!movie) return;
+    const entry = { title: movie.title, year: movie.year, poster, rating: movie.rating };
+    const next = watchlist.some((item) => movieKey(item) === movieKey(movie)) ? watchlist : [...watchlist, entry];
+    setWatchlist(next);
+    saveStorage(WATCHLIST_KEY, next);
+  };
+
+  const removeFromWatchlist = (item) => {
+    const next = watchlist.filter((saved) => movieKey(saved) !== movieKey(item));
+    setWatchlist(next);
+    saveStorage(WATCHLIST_KEY, next);
+  };
+
+  const clearWatchlist = () => {
+    setWatchlist([]);
+    saveStorage(WATCHLIST_KEY, []);
+  };
+
+  const isInWatchlist = movie ? watchlist.some((item) => movieKey(item) === movieKey(movie)) : false;
+
+  const markWatchedAndRoll = () => {
+    if (!movie) return;
+    const entry = { title: movie.title, year: movie.year, poster, rating: movie.rating };
+    const next = watched.some((item) => movieKey(item) === movieKey(movie)) ? watched : [...watched, entry];
+    setWatched(next);
+    saveStorage(WATCHED_KEY, next);
+    roll(next);
+  };
+
+  const trailerUrl = trailerMovie
+    ? `https://www.youtube-nocookie.com/embed?listType=search&list=${encodeURIComponent(`${trailerMovie.title} ${trailerMovie.year} official trailer`)}`
+    : null;
 
   const icon = (item) => ({ "Tamamen Rastgele":"🎲","Korku":"💀","Romantik":"❤️","Aksiyon":"💥","Komedi":"🙂","Dram":"🎭","Anime":"🐱","Bilim Kurgu":"🪐","Fantastik":"🧙","Gizem":"🔍","Gerilim":"〽️","Aile":"👨‍👩‍👧‍👦" }[item] || "•");
 
@@ -94,7 +190,7 @@ function App() {
       <div className="ambient ambient-one" /><div className="ambient ambient-two" />
       <header className="topbar">
         <div className="brand-lockup"><div className="brand-mark">▶</div><div><div className="brand-name">Pisi<span>Box</span></div><small>FİLM HER ZAMAN İYİ BİR FİKİRDİR.</small></div></div>
-        <nav><button>⌂ <span>Ana Sayfa</span></button><button onClick={() => {setCategory("Tamamen Rastgele");setMovie(null)}}>♡ <span>Rastgele</span></button><button className="theme-button">☾</button></nav>
+        <nav><button>⌂ <span>Ana Sayfa</span></button><button onClick={() => {setCategory("Tamamen Rastgele");setMovie(null)}}>♡ <span>Rastgele</span></button><button className="watchlist-button" onClick={() => setWatchlistOpen(true)}>🔖 <span>İzleme Listem ({watchlist.length})</span></button><button className="theme-button">☾</button></nav>
       </header>
       <main>
         <section className="hero-copy"><div className="mini-kicker">NE İZLESEM DİYE DÜŞÜNME.</div><h1>ZARI AT,<br /><em>FİLMİNİ BUL.</em></h1><p>Karar vermeyi bırak. Bir kategori seç veya tamamen şansa bırak.</p></section>
@@ -109,7 +205,11 @@ function App() {
             </span>
           </button>
           <div className="scribble scribble-right"><b>↙</b> ve filmin<br/>gelsin!</div>
-          <button className="roll-button" onClick={roll}>🎲 <span>ZARI AT</span></button>
+          <div className="dice-controls" style={{position:"absolute",bottom:22,left:"50%",transform:"translateX(-50%)",display:"flex",alignItems:"center",justifyContent:"center",gap:10,width:"min(94%,760px)",flexWrap:"wrap",zIndex:5}}>
+  <button className="roll-button" style={{position:"static",transform:"none"}} onClick={roll}>🎲 <span>ZARI AT</span></button>
+  <button className="watched-button" onClick={markWatchedAndRoll} disabled={!movie} style={{border:"1px solid rgba(255,255,255,.12)",borderRadius:12,padding:"12px 16px",background:"rgba(8,10,15,.82)",color:"#fff",fontWeight:800,cursor:movie?"pointer":"not-allowed",opacity:movie?1:.45,backdropFilter:"blur(14px)"}}>👁️ Bunu Zaten İzledim</button>
+  <button className="sound-toggle" onClick={toggleSound} aria-label={soundEnabled?"Zar sesini kapat":"Zar sesini aç"} style={{width:46,height:46,border:"1px solid rgba(255,255,255,.12)",borderRadius:12,background:"rgba(8,10,15,.82)",color:"#fff",fontSize:18,cursor:"pointer",backdropFilter:"blur(14px)"}}>{soundEnabled?"🔊":"🔇"}</button>
+</div>
         </section>
         <section className={movie?"result-panel has-result":"result-panel"}>
           {movie ? <div className="movie-result"><div className="poster-art">
@@ -121,8 +221,46 @@ function App() {
                 <div className="poster-fallback"><span>🎬</span><small>Afiş bulunamadı</small></div>
               )}
               <strong>⭐ {movie.rating}</strong>
-            </div><div className="result-copy"><span className="result-kicker">{movie.categories.join(" · ")}</span><h2>{movie.title}</h2><small>{movie.year}</small><p>{movie.summary}</p><button className="again" onClick={roll}>🎲 Bir daha at</button></div></div> : <div className="empty-result"><div className="film-icon">▣</div><h3>Henüz film yok.</h3><p>Zarı atarak senin için bir film önerelim!</p></div>}
+            </div><div className="result-copy"><span className="result-kicker">{movie.categories.join(" · ")}</span><h2>{movie.title}</h2><small>{movie.year}</small><p>{movie.summary}</p><div className="platform-row">
+  <span className="platform-label">Nerede İzlenir?</span>
+  <span className="platform-badge netflix">Netflix</span>
+  <span className="platform-badge prime">Prime Video</span>
+  <span className="platform-badge disney">Disney+</span>
+  <span className="platform-badge blutv">BluTV</span>
+  <span className="platform-badge mubi">MUBI</span>
+</div>
+<p className="platform-note">Platform etiketleri keşif amaçlıdır; güncel katalog uygunluğu doğrulanmamıştır.</p>
+<div className="result-actions">
+  <button className="again" onClick={roll}>🎲 Bir daha at</button>
+  <button className="watchlist-action" onClick={isInWatchlist ? () => removeFromWatchlist(movie) : addToWatchlist}>{isInWatchlist ? "🔖 Listeden Çıkar" : "🔖 Listeme Ekle"}</button>
+  <button className="trailer-action" onClick={() => setTrailerMovie(movie)}>🎬 Fragmanı İzle</button>
+</div></div></div> : <div className="empty-result"><div className="film-icon">▣</div><h3>Henüz film yok.</h3><p>Zarı atarak senin için bir film önerelim!</p></div>}
         </section>
+{dailyMovie && (
+        <section className="daily-pick" style={{margin:"24px auto 0",maxWidth:980}}>
+          <div className="daily-pick-inner" style={{display:"grid",gridTemplateColumns:"minmax(150px,190px) 1fr",gap:22,alignItems:"center",padding:20,border:"1px solid rgba(255,255,255,.1)",borderRadius:22,background:"rgba(8,10,16,.68)",backdropFilter:"blur(18px)",boxShadow:"0 20px 70px rgba(0,0,0,.25)"}}>
+            <div style={{position:"relative",aspectRatio:"2/3",overflow:"hidden",borderRadius:15,background:"rgba(255,255,255,.04)"}}>
+              {dailyPoster ? <img src={dailyPoster} alt={dailyMovie.title} style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}} /> : <div style={{height:"100%",display:"grid",placeItems:"center",color:"rgba(255,255,255,.55)",fontSize:38}}>🎬</div>}
+            </div>
+            <div>
+              <span className="content-kicker">⭐ GÜNÜN SEÇİMİ</span>
+              <h2 style={{margin:"7px 0 4px"}}>{dailyMovie.title}</h2>
+              <small style={{color:"rgba(255,255,255,.58)"}}>{dailyMovie.year} · ⭐ {dailyMovie.rating}</small>
+              <p style={{color:"rgba(255,255,255,.72)",lineHeight:1.7}}>{dailyMovie.summary}</p>
+              <div style={{display:"flex",gap:9,flexWrap:"wrap"}}>
+                <button className="again" onClick={() => {setMovie(dailyMovie);fetchPoster(dailyMovie);window.scrollTo({top:0,behavior:"smooth"});}}>🎬 Filmi Göster</button>
+                <button className="watchlist-action" onClick={() => {
+                  if (!watchlist.some((item) => movieKey(item) === movieKey(dailyMovie))) {
+                    const next=[...watchlist,{title:dailyMovie.title,year:dailyMovie.year,poster:dailyPoster,rating:dailyMovie.rating}];
+                    setWatchlist(next); saveStorage(WATCHLIST_KEY,next);
+                  }
+                }}>🔖 Listeme Ekle</button>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
         <section className="seo-content">
           <div className="content-heading">
             <span className="content-kicker">PISIBOX HAKKINDA</span>
@@ -244,6 +382,50 @@ function App() {
           </section>
         </div>
       )}
+      {watchlistOpen && (
+        <div className="info-modal-backdrop" role="presentation" onClick={() => setWatchlistOpen(false)}>
+          <section className="info-modal watchlist-modal" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()} style={{maxWidth:920}}>
+            <button className="modal-close" onClick={() => setWatchlistOpen(false)} aria-label="İzleme listesini kapat">×</button>
+            <span className="content-kicker">🔖 KAYDEDİLEN FİLMLER</span>
+            <h2>İzleme Listem ({watchlist.length})</h2>
+            {!watchlist.length ? (
+              <div className="empty-result" style={{padding:"35px 10px"}}><div className="film-icon">🔖</div><h3>Listen henüz boş.</h3><p>Film kartındaki “Listeme Ekle” düğmesiyle filmleri burada saklayabilirsin.</p></div>
+            ) : (
+              <>
+                <div className="watchlist-grid" style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(145px,1fr))",gap:14}}>
+                  {watchlist.map((item) => (
+                    <article key={movieKey(item)} style={{overflow:"hidden",border:"1px solid rgba(255,255,255,.09)",borderRadius:15,background:"rgba(255,255,255,.035)"}}>
+                      <div style={{aspectRatio:"2/3",background:"rgba(255,255,255,.03)"}}>
+                        {item.poster ? <img src={item.poster} alt={item.title} style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}} /> : <div style={{height:"100%",display:"grid",placeItems:"center",fontSize:32}}>🎬</div>}
+                      </div>
+                      <div style={{padding:10}}>
+                        <strong style={{display:"block",lineHeight:1.3}}>{item.title}</strong>
+                        <small style={{color:"rgba(255,255,255,.55)"}}>{item.year} · ⭐ {item.rating}</small>
+                        <button onClick={() => removeFromWatchlist(item)} style={{marginTop:9,width:"100%",border:"1px solid rgba(255,255,255,.1)",borderRadius:9,padding:"8px 7px",background:"rgba(255,255,255,.04)",color:"#fff",cursor:"pointer"}}>Listeden Çıkar</button>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+                <button onClick={clearWatchlist} style={{marginTop:18,border:"1px solid rgba(255,80,80,.25)",borderRadius:10,padding:"10px 14px",background:"rgba(130,20,25,.25)",color:"#fff",cursor:"pointer"}}>🗑️ Tümünü Temizle</button>
+              </>
+            )}
+          </section>
+        </div>
+      )}
+
+      {trailerMovie && trailerUrl && (
+        <div className="info-modal-backdrop" role="presentation" onClick={() => setTrailerMovie(null)}>
+          <section className="info-modal trailer-modal" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()} style={{maxWidth:1000,padding:18}}>
+            <button className="modal-close" onClick={() => setTrailerMovie(null)} aria-label="Fragmanı kapat">×</button>
+            <span className="content-kicker">🎬 FRAGMAN</span>
+            <h2 style={{marginBottom:14}}>{trailerMovie.title}</h2>
+            <div style={{position:"relative",aspectRatio:"16/9",overflow:"hidden",borderRadius:14,background:"#000"}}>
+              <iframe title={`${trailerMovie.title} fragmanı`} src={trailerUrl} style={{width:"100%",height:"100%",border:0}} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
+            </div>
+          </section>
+        </div>
+      )}
+
       {cookieVisible && (
         <aside className="cookie-banner" role="dialog" aria-label="Çerez bildirimi">
           <div>
