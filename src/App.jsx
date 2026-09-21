@@ -229,6 +229,45 @@ function App() {
     setMessage("");
   };
 
+  if (categoryPage === "Korku") {
+    return (
+      <div className="site horror-view">
+        <section className="category-page">
+          <div className="category-page-head">
+            <button className="back-btn" onClick={() => setCategoryPage(null)}>← Ana Sayfa</button>
+            <span className="section-kicker">PISIBOX · KORKU</span>
+            <h1>En Popüler 300 Korku Filmi</h1>
+            <p>Seçilmiş 300 korku klasiği ve modern yapımı keşfet.</p>
+            <div className="movie-filter">
+              <span>⌕</span>
+              <input value={movieFilter} onChange={(e) => setMovieFilter(e.target.value)} placeholder="Korku filmlerinde ara..." />
+            </div>
+          </div>
+          <div className="movie-grid">
+            {horrorMovies
+              .filter((movie) => movie.title.toLocaleLowerCase("tr-TR").includes(movieFilter.toLocaleLowerCase("tr-TR")))
+              .map((movie) => (
+                <article className="movie-card" key={movie.id} onClick={() => setSelectedTitle({
+                  id: "h" + movie.id, title: movie.title, type: "Film", year: movie.year,
+                  genre: ["Korku"], rating: movie.rating, emoji: "👻", desc: movie.desc, poster: null
+                })}>
+                  <div className="movie-poster">
+                    <div className="movie-poster-art"><span>👻</span><b>{movie.title}</b></div>
+                    <strong>{movie.rating ? "⭐ " + movie.rating : "IMDb"}</strong>
+                  </div>
+                  <div className="movie-info">
+                    <h3>{movie.title}</h3>
+                    <small>{movie.year} · {movie.rating ? "IMDb " + movie.rating : "IMDb puanı ekleniyor"}</small>
+                    <p>{movie.desc}</p>
+                  </div>
+                </article>
+              ))}
+          </div>
+        </section>
+      </div>
+    );
+  }
+
   return (
     <div className="site">
       <div className={`hero-scene scene-${slide.tone}`} aria-hidden="true">
