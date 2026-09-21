@@ -59,6 +59,12 @@ function App() {
   const [authError, setAuthError] = useState("");
   const [authLoading, setAuthLoading] = useState(false);
   const [user, setUser] = useState(null);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [profileName, setProfileName] = useState("");
+  const [profileAvatar, setProfileAvatar] = useState("");
+  const [profilePreview, setProfilePreview] = useState("");
+  const [profileError, setProfileError] = useState("");
+  const [profileLoading, setProfileLoading] = useState(false);
 
   const slide = slides[slideIndex];
 
@@ -85,6 +91,65 @@ function App() {
     });
     return () => listener.subscription.unsubscribe();
   }, []);
+
+  const openProfile = () => {
+    if (!user) return;
+    setProfileName(user.user_metadata?.display_name || user.email?.split("@")[0] || "PisiBox Kullanıcısı");
+    setProfileAvatar(user.user_metadata?.avatar_url || "");
+    setProfilePreview(user.user_metadata?.avatar_url || "");
+    setProfileError("");
+    setProfileOpen(true);
+  };
+
+  const handleAvatarChange = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setProfileError("");
+    if (!file.type.startsWith("image/")) {
+      setProfileError("Lütfen bir görsel dosyası seç.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setProfileError("Profil fotoğrafı en fazla 5 MB olabilir.");
+      return;
+    }
+    setProfileAvatar(file);
+    setProfilePreview(URL.createObjectURL(file));
+  };
+
+  const saveProfile = async (event) => {
+    event.preventDefault();
+    if (!supabase || !user) return;
+    setProfileError("");
+    setProfileLoading(true);
+    try {
+      let avatarUrl = typeof profileAvatar === "string" ? profileAvatar : (user.user_metadata?.avatar_url || "");
+      if (profileAvatar && typeof profileAvatar !== "string") {
+        const ext = profileAvatar.name.split(".").pop()?.toLowerCase() || "jpg";
+        const path = user.id + "/avatar-" + Date.now() + "." + ext;
+        const { error: uploadError } = await supabase.storage.from("avatars").upload(path, profileAvatar, {
+          upsert: true,
+          contentType: profileAvatar.type,
+          cacheControl: "3600",
+        });
+        if (uploadError) throw uploadError;
+        const { data } = supabase.storage.from("avatars").getPublicUrl(path);
+        avatarUrl = data.publicUrl;
+      }
+      const { data, error } = await supabase.auth.updateUser({
+        data: { display_name: profileName.trim() || "PisiBox Kullanıcısı", avatar_url: avatarUrl },
+      });
+      if (error) throw error;
+      setUser(data.user);
+      setProfileAvatar(avatarUrl);
+      setProfilePreview(avatarUrl);
+      setProfileOpen(false);
+    } catch (error) {
+      setProfileError(error.message || "Profil kaydedilemedi. Avatar depolamasının kurulduğundan emin ol.");
+    } finally {
+      setProfileLoading(false);
+    }
+  };
 
   const openAuth = (mode) => {
     setAuthMode(mode);
@@ -164,7 +229,10 @@ function App() {
         <div className="nav-actions">
           {user ? (
             <>
-              <span className="user-badge">👤 {user.user_metadata?.display_name || user.email?.split("@")[0]}</span>
+              <button className="profile-mini" onClick={openProfile} title="Profilim">
+                {user.user_metadata?.avatar_url ? <img src={user.user_metadata.avatar_url} alt="" /> : <span>👤</span>}
+                <b>{user.user_metadata?.display_name || user.email?.split("@")[0]}</b>
+              </button>
               <button className="ghost-btn" onClick={logout}>Çıkış</button>
             </>
           ) : (
@@ -274,6 +342,30 @@ function App() {
         </section>
       </main>
 
+
+      {profileOpen && (
+        <div className="auth-overlay" onMouseDown={(event) => {
+          if (event.target === event.currentTarget) setProfileOpen(false);
+        }}>
+          <div className="auth-modal profile-modal">
+            <button className="auth-close" onClick={() => setProfileOpen(false)} aria-label="Kapat">×</button>
+            <div className="auth-logo">🐾 <span>Pisi<span>Box</span></span></div>
+            <span className="section-kicker">HESABIM</span>
+            <h2>Profilini düzenle</h2>
+            <p className="auth-subtitle">Kendine ait bir profil fotoğrafı ve görünen ad seç.</p>
+            <form onSubmit={saveProfile} className="auth-form">
+              <div className="avatar-editor">
+                <div className="avatar-preview">{profilePreview ? <img src={profilePreview} alt="Profil önizleme" /> : <span>👤</span>}</div>
+                <label className="avatar-upload">📷 Görsel seç<input type="file" accept="image/*" onChange={handleAvatarChange} /></label>
+                <small>JPG, PNG, GIF veya WebP · Maks. 5 MB</small>
+              </div>
+              <label>Görünen ad<input value={profileName} onChange={(e) => setProfileName(e.target.value)} maxLength={30} placeholder="Kullanıcı adın" /></label>
+              {profileError && <div className="auth-error">{profileError}</div>}
+              <button className="primary-btn auth-submit" disabled={profileLoading}>{profileLoading ? "Kaydediliyor..." : "Profili Kaydet"}</button>
+            </form>
+          </div>
+        </div>
+      )}
 
       {authMode && (
         <div className="auth-overlay" onMouseDown={(event) => {
