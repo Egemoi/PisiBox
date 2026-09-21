@@ -97,3 +97,52 @@ footer{position:relative;z-index:2;text-align:center;padding:34px 20px 42px;colo
 .ad-slot span{position:absolute;top:9px;left:12px;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.28)}
 .ad-slot-inner{width:100%;height:90px}
 @media(max-width:700px){.ad-grid{grid-template-columns:1fr;gap:12px}.ad-slot{min-height:100px}}
+
+
+.poster-art{
+  position:relative;
+  width:150px;
+  min-width:150px;
+  height:220px;
+  border-radius:14px;
+  overflow:hidden;
+  background:linear-gradient(145deg,#24262b,#08090b);
+  border:1px solid rgba(255,255,255,.12);
+  box-shadow:0 18px 45px rgba(0,0,0,.5),0 0 30px rgba(255,35,40,.08);
+}
+.poster-art img{
+  width:100%;
+  height:100%;
+  display:block;
+  object-fit:cover;
+}
+.poster-art strong{
+  position:absolute;
+  left:10px;
+  bottom:10px;
+  padding:6px 9px;
+  border-radius:8px;
+  background:rgba(0,0,0,.78);
+  color:#fff;
+  font-size:12px;
+  backdrop-filter:blur(8px);
+}
+.poster-loading,.poster-fallback{
+  width:100%;
+  height:100%;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  color:rgba(255,255,255,.65);
+}
+.poster-loading span,.poster-fallback span{font-size:38px}
+.poster-loading small,.poster-fallback small{
+  font-size:10px;
+  letter-spacing:1px;
+  text-transform:uppercase;
+}
+@media(max-width:600px){
+  .poster-art{width:120px;min-width:120px;height:180px}
+}
