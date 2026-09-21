@@ -11,6 +11,14 @@ import { moviesPart8 } from "./data/movies-part8";
 
 const posterCache = new Map();
 
+const posterUrl = (title, year) => {
+  const params = new URLSearchParams({
+    title,
+    year: String(year || ""),
+  });
+  return `/api/omdb?${params.toString()}`;
+};
+
 const movies = Object.values([...moviesPart1, ...moviesPart2, ...moviesPart3, ...moviesPart4, ...moviesPart5, ...moviesPart6, ...moviesPart7, ...moviesPart8].reduce((map, item) => { map[item.title] = item; return map; }, {}));
 
 const categories = ["Tamamen Rastgele","Korku","Romantik","Aksiyon","Komedi","Dram","Anime","Bilim Kurgu","Fantastik","Gizem","Gerilim","Aile"];
@@ -24,36 +32,29 @@ function App() {
   const available = useMemo(() => category === "Tamamen Rastgele" ? movies : movies.filter((item) => item.categories.includes(category)), [category]);
 
   const fetchPoster = async (selectedMovie) => {
-    if (!selectedMovie?.title) return;
+    if (!selectedMovie?.title) return null;
 
     const cacheKey = `${selectedMovie.title}|${selectedMovie.year}`;
     if (posterCache.has(cacheKey)) {
-      setPoster(posterCache.get(cacheKey));
-      return;
+      const cached = posterCache.get(cacheKey);
+      setPoster(cached);
+      return cached;
     }
 
     setPosterLoading(true);
     setPoster(null);
 
     try {
-      const params = new URLSearchParams({
-        title: selectedMovie.title,
-        year: String(selectedMovie.year || ""),
-      });
-
-      const response = await fetch(`/api/omdb?${params.toString()}`);
+      const response = await fetch(posterUrl(selectedMovie.title, selectedMovie.year));
       const data = await response.json();
-
-      if (data.Response === "True" && data.Poster && data.Poster !== "N/A") {
-        posterCache.set(cacheKey, data.Poster);
-        setPoster(data.Poster);
-      } else {
-        posterCache.set(cacheKey, null);
-        setPoster(null);
-      }
+      const url = data.Response === "True" && data.Poster && data.Poster !== "N/A" ? data.Poster : null;
+      posterCache.set(cacheKey, url);
+      setPoster(url);
+      return url;
     } catch (error) {
       console.error("OMDb poster alınamadı:", error);
       setPoster(null);
+      return null;
     } finally {
       setPosterLoading(false);
     }
@@ -61,6 +62,17 @@ function App() {
 
   const roll = async () => {
     if (!available.length) return;
+
+    const choices = available.length > 1
+      ? available.filter((item) => item.title !== movie?.title)
+      : available;
+
+    const selectedMovie = choices[Math.floor(Math.random() * choices.length)];
+    setMovie(selectedMovie);
+
+    // Poster isteğini hemen başlat; film sonucu beklemeden ekrana gelir.
+    fetchPoster(selectedMovie);
+  };
 
     const choices = available.length > 1
       ? available.filter((item) => item.title !== movie?.title)
