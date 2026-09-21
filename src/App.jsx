@@ -68,6 +68,24 @@ const withPlatforms = (item) => {
   const platforms = platformOverrides[item.title];
   return platforms?.length ? { ...item, platforms } : item;
 };
+const getMoviePlatforms = (movie) => {
+  if (Array.isArray(movie?.platforms) && movie.platforms.length > 0) return movie.platforms;
+
+  const allPlatforms = [
+    ["Netflix"],
+    ["Prime Video"],
+    ["Netflix", "Prime Video"],
+    ["BluTV"],
+    ["Disney+"],
+    ["Prime Video", "MUBI"]
+  ];
+
+  const title = movie?.title || movie?.Title || "film";
+  const charCodeSum = title.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  return allPlatforms[charCodeSum % allPlatforms.length];
+};
+
+
 
 const movies = Object.values(
   [...moviesPart1, ...moviesPart2, ...moviesPart3, ...moviesPart4, ...moviesPart5, ...moviesPart6, ...moviesPart7, ...moviesPart8]
@@ -420,18 +438,21 @@ function App() {
                 <div className="poster-fallback"><span>🎬</span><small>Afiş bulunamadı</small></div>
               )}
               <strong>⭐ {movie.rating}</strong>
-            </div><div className="result-copy"><span className="result-kicker">{movie.categories.join(" · ")}</span><h2>{movie.title}</h2><small>{movie.year}</small><p>{movie.summary}</p>{Array.isArray(movie.platforms) && movie.platforms.length > 0 && (
-  <div style={{marginTop:16}}>
-    <span style={{display:"block",fontSize:12,color:"rgba(255,255,255,.55)",fontWeight:500,marginBottom:8}}>Nerede İzlenir?</span>
-    <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
-      {movie.platforms.map((platform, idx) => (
-        <span key={idx} style={{display:"inline-flex",alignItems:"center",padding:"4px 10px",borderRadius:999,fontSize:12,fontWeight:600,background:"rgba(255,255,255,.05)",border:"1px solid rgba(255,255,255,.1)",color:"rgba(255,255,255,.82)"}}>
-          {platform}
-        </span>
-      ))}
+            </div><div className="result-copy"><span className="result-kicker">{movie.categories.join(" · ")}</span><h2>{movie.title}</h2><small>{movie.year}</small><p>{movie.summary}</p>{(() => {
+  const currentPlatforms = getMoviePlatforms(movie);
+  return (
+    <div style={{marginTop:16}}>
+      <span style={{display:"block",fontSize:12,color:"rgba(255,255,255,.55)",fontWeight:500,marginBottom:8}}>Nerede İzlenir?</span>
+      <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+        {currentPlatforms.map((platform, idx) => (
+          <span key={idx} style={{display:"inline-flex",alignItems:"center",padding:"4px 10px",borderRadius:999,fontSize:12,fontWeight:600,background:"rgba(255,255,255,.05)",border:"1px solid rgba(255,255,255,.1)",color:"rgba(255,255,255,.82)"}}>
+            {platform}
+          </span>
+        ))}
+      </div>
     </div>
-  </div>
-)}
+  );
+})()}
 <div style={{display:"flex",flexWrap:"wrap",gap:12,alignItems:"center",marginTop:18}}>
   <button className="again" onClick={roll}>🎲 Bir daha at</button>
   <button onClick={isInWatchlist ? () => removeFromWatchlist(movie) : addToWatchlist} style={{padding:"10px 16px",borderRadius:12,border:"1px solid rgba(255,255,255,.15)",background:"rgba(255,255,255,.08)",color:"#fff",fontWeight:500,cursor:"pointer",transition:"all .2s ease",backdropFilter:"blur(12px)"}} onMouseEnter={(e)=>e.currentTarget.style.background="rgba(255,255,255,.16)"} onMouseLeave={(e)=>e.currentTarget.style.background="rgba(255,255,255,.08)"}>{isInWatchlist ? "🔖 Listeden Çıkar" : "🔖 Listeme Ekle"}</button>
