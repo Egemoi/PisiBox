@@ -1,6 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "./lib/supabase";
-
 const categories = [
   { name: "Korku", count: 348, icon: "☠", tone: "red", character: "👻", tag: "Karanlık ve ürpertici" },
   { name: "Aksiyon", count: 729, icon: "⚔", tone: "blue", character: "🥷", tag: "Adrenalin dolu" },
@@ -85,17 +83,23 @@ function App() {
   );
 
   useEffect(() => {
-    if (!supabase || !authToken) return;
-    supabase.rpc("pisibox_get_session", { p_token: authToken }).then(({ data, error }) => {
-      if (error || !data) {
-        localStorage.removeItem("pisibox_session");
-        setAuthToken("");
-        setUser(null);
-        return;
-      }
-      setUser({ id: data.id, user_metadata: { display_name: data.display_name, username: data.username, avatar_url: data.avatar_url }, email: "" });
-    });
+    if (!authToken) return;
+    const accounts = JSON.parse(localStorage.getItem("pisibox_accounts") || "{}");
+    const account = accounts[authToken];
+    if (!account) {
+      localStorage.removeItem("pisibox_session");
+      setAuthToken("");
+      setUser(null);
+      return;
+    }
+    setUser({ id: account.id, user_metadata: { display_name: account.displayName, username: account.username, avatar_url: account.avatarUrl || "" }, email: "" });
   }, [authToken]);
+
+  const hashPassword = async (value) => {
+    const data = new TextEncoder().encode(value);
+    const hash = await crypto.subtle.digest("SHA-256", data);
+    return Array.from(new Uint8Array(hash)).map((byte) => byte.toString(16).padStart(2, "0")).join("");
+  };
 
   const openProfile = () => {
     if (!user) return;
@@ -124,20 +128,19 @@ function App() {
 
   const saveProfile = async (event) => {
     event.preventDefault();
-    if (!supabase || !authToken) return;
+    if (!authToken) return;
     setProfileError("");
     setProfileLoading(true);
     try {
-      const avatarUrl = typeof profileAvatar === "string" ? profileAvatar : profilePreview;
-      const { data, error } = await supabase.rpc("pisibox_update_profile", {
-        p_token: authToken,
-        p_display_name: profileName,
-        p_avatar_url: avatarUrl || "",
-      });
-      if (error) throw error;
-      setUser({ id: data.id, user_metadata: { display_name: data.display_name, username: data.username, avatar_url: data.avatar_url }, email: "" });
-      setProfileAvatar(data.avatar_url || "");
-      setProfilePreview(data.avatar_url || "");
+      const accounts = JSON.parse(localStorage.getItem("pisibox_accounts") || "{}");
+      const account = accounts[authToken];
+      if (!account) throw new Error("Oturum bulunamadı.");
+      let avatarUrl = typeof profileAvatar === "string" ? profileAvatar : profilePreview;
+      accounts[authToken] = { ...account, displayName: profileName.trim() || account.username, avatarUrl: avatarUrl || "" };
+      localStorage.setItem("pisibox_accounts", JSON.stringify(accounts));
+      setUser({ id: account.id, user_metadata: { display_name: accounts[authToken].displayName, username: account.username, avatar_url: accounts[authToken].avatarUrl }, email: "" });
+      setProfileAvatar(accounts[authToken].avatarUrl);
+      setProfilePreview(accounts[authToken].avatarUrl);
       setProfileOpen(false);
     } catch (error) {
       setProfileError(error.message || "Profil kaydedilemedi.");
@@ -157,23 +160,40 @@ function App() {
   const submitAuth = async (event) => {
     event.preventDefault();
     setAuthError("");
-    if (!supabase) {
-      setAuthError("Veritabanı bağlantısı kurulamadı.");
-      return;
-    }
     setAuthLoading(true);
     try {
       const username = authUsername.trim().toLowerCase();
-      const rpcName = authMode === "register" ? "pisibox_register" : "pisibox_login";
-      const params = authMode === "register"
-        ? { p_username: username, p_password: authPassword, p_display_name: authName.trim() || username }
-        : { p_username: username, p_password: authPassword };
-      const { data, error } = await supabase.rpc(rpcName, params);
-      if (error) throw error;
-      if (!data?.token) throw new Error("Hesap oluşturulamadı.");
-      localStorage.setItem("pisibox_session", data.token);
-      setAuthToken(data.token);
-      setUser({ id: data.id, user_metadata: { display_name: data.display_name, username: data.username, avatar_url: data.avatar_url }, email: "" });
+      if (!/^[a-z0-9_.-]{3,24}$/.test(username)) throw new Error("Kullanıcı adı 3-24 karakter olmalı.");
+      const accounts = JSON.parse(localStorage.getItem("pisibox_accounts") || "{}");
+      const existingKey = Object.keys(accounts).find((key) => accounts[key].username === username);
+
+      if (authMode === "register") {
+        if (authPassword.length < 6) throw new Error("Şifre en az 6 karakter olmalı.");
+        if (existingKey) throw new Error("Bu kullanıcı adı zaten alınmış.");
+        const id = crypto.randomUUID();
+        const passwordHash = await hashPassword(authPassword);
+        const account = {
+          id,
+          username,
+          displayName: authName.trim() || username,
+          passwordHash,
+          avatarUrl: "",
+          createdAt: new Date().toISOString(),
+        };
+        accounts[id] = account;
+        localStorage.setItem("pisibox_accounts", JSON.stringify(accounts));
+        localStorage.setItem("pisibox_session", id);
+        setAuthToken(id);
+        setUser({ id, user_metadata: { display_name: account.displayName, username, avatar_url: "" }, email: "" });
+      } else {
+        if (!existingKey) throw new Error("Kullanıcı adı veya şifre hatalı.");
+        const account = accounts[existingKey];
+        const passwordHash = await hashPassword(authPassword);
+        if (account.passwordHash !== passwordHash) throw new Error("Kullanıcı adı veya şifre hatalı.");
+        localStorage.setItem("pisibox_session", existingKey);
+        setAuthToken(existingKey);
+        setUser({ id: account.id, user_metadata: { display_name: account.displayName, username: account.username, avatar_url: account.avatarUrl || "" }, email: "" });
+      }
       setAuthMode(null);
     } catch (error) {
       setAuthError(error.message || "Bir hata oluştu.");
@@ -182,8 +202,7 @@ function App() {
     }
   };
 
-  const logout = async () => {
-    if (supabase && authToken) await supabase.rpc("pisibox_logout", { p_token: authToken });
+  const logout = () => {
     localStorage.removeItem("pisibox_session");
     setAuthToken("");
     setUser(null);
