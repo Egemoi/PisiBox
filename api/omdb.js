@@ -1,5 +1,5 @@
-export default async function handler(req, res) {
-  const { title, year } = req.query;
+module.exports = async function handler(req, res) {
+  const { title, year } = req.query || {};
 
   if (!title) {
     return res.status(400).json({ Response: "False", Error: "Film adı gerekli." });
@@ -8,7 +8,7 @@ export default async function handler(req, res) {
   const apiKey = process.env.OMDB_API_KEY;
 
   if (!apiKey) {
-    return res.status(500).json({ Response: "False", Error: "OMDb API anahtarı yapılandırılmamış." });
+    return res.status(500).json({ Response: "False", Error: "OMDb API anahtarı Vercel'de bulunamadı." });
   }
 
   const params = new URLSearchParams({
@@ -27,8 +27,6 @@ export default async function handler(req, res) {
     const response = await fetch(`https://www.omdbapi.com/?${params.toString()}`);
     const data = await response.json();
 
-    // OMDb bazen HTTP poster URL'si döndürebilir. Site HTTPS olduğu için
-    // tarayıcının mixed-content engeline takılmaması adına HTTPS'e çeviriyoruz.
     if (data.Response === "True" && data.Poster && data.Poster !== "N/A") {
       data.Poster = data.Poster.replace(/^http:\/\//i, "https://");
     }
@@ -42,4 +40,4 @@ export default async function handler(req, res) {
       Error: "OMDb servisine ulaşılamadı.",
     });
   }
-}
+};
