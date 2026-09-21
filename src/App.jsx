@@ -45,7 +45,7 @@ function App() {
     setMovie(choices[Math.floor(Math.random() * choices.length)]);
   };
 
-  const icon = (item) => ({ "Tamamen Rastgele":"🎲","Korku":"☠","Romantik":"♥","Aksiyon":"✦","Komedi":"●","Dram":"◈","Anime":"✦","Bilim Kurgu":"◉","Fantastik":"♠","Gizem":"⌕","Gerilim":"〰","Aile":"♟" }[item] || "•");
+  const icon = (item) => ({ "Tamamen Rastgele":"🎲","Korku":"💀","Romantik":"❤️","Aksiyon":"💥","Komedi":"🙂","Dram":"🎭","Anime":"🐱","Bilim Kurgu":"🪐","Fantastik":"🧙","Gizem":"🔍","Gerilim":"〽️","Aile":"👨‍👩‍👧‍👦" }[item] || "•");
 
   return (
     <div className="dice-app">
