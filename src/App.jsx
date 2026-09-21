@@ -5,8 +5,9 @@ import { moviesPart2 } from "./data/movies-part2";
 import { moviesPart3 } from "./data/movies-part3";
 import { moviesPart4 } from "./data/movies-part4";
 import { moviesPart5 } from "./data/movies-part5";
+import { moviesPart6 } from "./data/movies-part6";
 
-const movies = Object.values([...moviesPart1, ...moviesPart2, ...moviesPart3, ...moviesPart4, ...moviesPart5].reduce((map, item) => { map[item.title] = item; return map; }, {}));
+const movies = Object.values([...moviesPart1, ...moviesPart2, ...moviesPart3, ...moviesPart4, ...moviesPart5, ...moviesPart6].reduce((map, item) => { map[item.title] = item; return map; }, {}));
 
 const categories = ["Tamamen Rastgele","Korku","Romantik","Aksiyon","Komedi","Dram","Anime","Bilim Kurgu","Fantastik","Gizem","Gerilim","Aile"];
 
