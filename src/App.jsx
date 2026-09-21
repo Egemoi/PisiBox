@@ -1,18 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 
 const categories = [
-  { name: "Korku", count: 348, icon: "☠", tone: "red", character: "👻", tag: "Ghostface • Scream" },
-  { name: "Aksiyon", count: 729, icon: "⚔", tone: "blue", character: "🔫", tag: "John Wick • Adrenalin" },
-  { name: "Komedi", count: 521, icon: "☻", tone: "amber", character: "🤪", tag: "Jim Carrey • Kahkaha" },
-  { name: "Dram", count: 634, icon: "◆", tone: "violet", character: "🎭", tag: "Duygusal başyapıtlar" },
-  { name: "Anime", count: 583, icon: "✦", tone: "pink", character: "🧑‍🦱", tag: "Goku • Anime evreni" },
-  { name: "Manga", count: 421, icon: "▤", tone: "slate", character: "🥷", tag: "Naruto • Manga dünyası" },
-  { name: "Bilim Kurgu", count: 314, icon: "◈", tone: "cyan", character: "🤖", tag: "Terminator • Gelecek" },
-  { name: "Fantastik", count: 392, icon: "✧", tone: "green", character: "🧙‍♂️", tag: "Harry Potter • Büyülü dünyalar" },
-  { name: "Romantik", count: 416, icon: "♥", tone: "rose", character: "💑", tag: "Titanic • Aşk hikâyeleri" },
-  { name: "Gizem", count: 276, icon: "?", tone: "indigo", character: "🕵️", tag: "Sherlock • Sırları çöz" },
-  { name: "Gerilim", count: 439, icon: "!", tone: "crimson", character: "🪓", tag: "Tansiyon yükseliyor" },
-  { name: "Aile", count: 287, icon: "⌂", tone: "lime", character: "🦸", tag: "Herkese uygun maceralar" },
+  { name: "Korku", count: 348, icon: "☠", tone: "red", character: "👻", tag: "Karanlık ve ürpertici" },
+  { name: "Aksiyon", count: 729, icon: "⚔", tone: "blue", character: "🥷", tag: "Adrenalin dolu" },
+  { name: "Komedi", count: 521, icon: "☻", tone: "amber", character: "😂", tag: "Bol kahkaha" },
+  { name: "Dram", count: 634, icon: "◆", tone: "violet", character: "🎭", tag: "Duygusal hikâyeler" },
+  { name: "Anime", count: 583, icon: "✦", tone: "pink", character: "⚔️", tag: "Anime evreni" },
+  { name: "Manga", count: 421, icon: "▤", tone: "slate", character: "📚", tag: "Manga dünyası" },
+  { name: "Bilim Kurgu", count: 314, icon: "◈", tone: "cyan", character: "🤖", tag: "Geleceğe yolculuk" },
+  { name: "Fantastik", count: 392, icon: "✧", tone: "green", character: "🧙", tag: "Büyülü dünyalar" },
+  { name: "Romantik", count: 416, icon: "♥", tone: "rose", character: "💘", tag: "Aşk hikâyeleri" },
+  { name: "Gizem", count: 276, icon: "?", tone: "indigo", character: "🕵️", tag: "Sırları çöz" },
+  { name: "Gerilim", count: 439, icon: "!", tone: "crimson", character: "👹", tag: "Tansiyon yükseliyor" },
+  { name: "Aile", count: 287, icon: "⌂", tone: "lime", character: "🧸", tag: "Herkese uygun" },
 ];
 
 const slides = [
