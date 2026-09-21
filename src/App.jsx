@@ -113,21 +113,27 @@ function App() {
       const context = new AudioContext();
       const now = context.currentTime;
       [0, 0.045, 0.09].forEach((offset, index) => {
-        const oscillator = context.createOscillator();
-        const gain = context.createGain();
-        oscillator.type = index === 1 ? "triangle" : "square";
-        oscillator.frequency.setValueAtTime(index === 1 ? 95 : 125, now + offset);
-        oscillator.frequency.exponentialRampToValueAtTime(55, now + offset + 0.07);
-        gain.gain.setValueAtTime(0.0001, now + offset);
-        gain.gain.exponentialRampToValueAtTime(0.07, now + offset + 0.006);
-        gain.gain.exponentialRampToValueAtTime(0.0001, now + offset + 0.075);
-        oscillator.connect(gain).connect(context.destination);
-        oscillator.start(now + offset);
-        oscillator.stop(now + offset + 0.08);
+        try {
+          const oscillator = context.createOscillator();
+          const gain = context.createGain();
+          oscillator.type = index === 1 ? "triangle" : "square";
+          oscillator.frequency.setValueAtTime(index === 1 ? 95 : 125, now + offset);
+          oscillator.frequency.exponentialRampToValueAtTime(55, now + offset + 0.07);
+          gain.gain.setValueAtTime(0.0001, now + offset);
+          gain.gain.exponentialRampToValueAtTime(0.07, now + offset + 0.006);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + offset + 0.075);
+          oscillator.connect(gain).connect(context.destination);
+          oscillator.start(now + offset);
+          oscillator.stop(now + offset + 0.08);
+        } catch (error) {
+          console.warn("Zar sesi kanalı başlatılamadı:", error);
+        }
       });
-      setTimeout(() => context.close(), 300);
+      setTimeout(() => {
+        try { context.close(); } catch {}
+      }, 300);
     } catch (error) {
-      console.error("Zar sesi başlatılamadı:", error);
+      console.warn("Zar sesi kullanılamadı; film seçimi devam ediyor:", error);
     }
   };
 
@@ -139,12 +145,27 @@ function App() {
 
   const roll = (watchedList = watched) => {
     const watchedSet = new Set(watchedList.map((item) => movieKey(item)));
-    const pool = (category === "Tamamen Rastgele" ? movies : movies.filter((item) => item.categories.includes(category)))
-      .filter((item) => !watchedSet.has(movieKey(item)));
-    if (!pool.length) return;
+    const fullPool = category === "Tamamen Rastgele"
+      ? movies
+      : movies.filter((item) => item.categories.includes(category));
+    let pool = fullPool.filter((item) => !watchedSet.has(movieKey(item)));
+
+    if (!pool.length) {
+      // Tüm uygun filmler izlendiğinde zar kilitlenmesin: geçmişi sıfırla
+      // ve aynı havuzdan yeniden rastgele seçim yapmaya devam et.
+      setWatched([]);
+      saveStorage(WATCHED_KEY, []);
+      watchedSet.clear();
+      pool = [...fullPool];
+      if (!pool.length) return;
+      window.alert("Bu kategorideki tüm filmleri izledin. İzleme geçmişin sıfırlandı; yeniden film seçiyoruz.");
+    }
+
     const choices = pool.length > 1 ? pool.filter((item) => movieKey(item) !== movieKey(movie)) : pool;
     const selectedMovie = choices.length ? choices[Math.floor(Math.random() * choices.length)] : pool[0];
-    playDiceSound();
+
+    // Ses hiçbir koşulda film seçimini engellememeli.
+    try { playDiceSound(); } catch (error) { console.warn("Zar sesi atlandı:", error); }
     setMovie(selectedMovie);
     fetchPoster(selectedMovie);
   };
@@ -179,8 +200,14 @@ function App() {
     roll(next);
   };
 
+  const trailerSearchQuery = trailerMovie
+    ? encodeURIComponent(`${trailerMovie.title} ${trailerMovie.year} fragman trailer`)
+    : "";
   const trailerUrl = trailerMovie
-    ? `https://www.youtube-nocookie.com/embed?listType=search&list=${encodeURIComponent(`${trailerMovie.title} ${trailerMovie.year} official trailer`)}`
+    ? `https://www.youtube-nocookie.com/embed?listType=search&list=${trailerSearchQuery}`
+    : null;
+  const youtubeSearchUrl = trailerMovie
+    ? `https://www.youtube.com/results?search_query=${trailerSearchQuery}`
     : null;
 
   const icon = (item) => ({ "Tamamen Rastgele":"🎲","Korku":"💀","Romantik":"❤️","Aksiyon":"💥","Komedi":"🙂","Dram":"🎭","Anime":"🐱","Bilim Kurgu":"🪐","Fantastik":"🧙","Gizem":"🔍","Gerilim":"〽️","Aile":"👨‍👩‍👧‍👦" }[item] || "•");
@@ -422,6 +449,14 @@ function App() {
             <div style={{position:"relative",aspectRatio:"16/9",overflow:"hidden",borderRadius:14,background:"#000"}}>
               <iframe title={`${trailerMovie.title} fragmanı`} src={trailerUrl} style={{width:"100%",height:"100%",border:0}} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
             </div>
+            <a
+              href={youtubeSearchUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10,marginTop:14,minHeight:52,padding:"12px 18px",borderRadius:13,background:"#ff0000",color:"#fff",fontWeight:900,textDecoration:"none",fontSize:16,boxShadow:"0 10px 30px rgba(255,0,0,.22)"}}
+            >
+              ▶ YouTube'da İzle
+            </a>
           </section>
         </div>
       )}
