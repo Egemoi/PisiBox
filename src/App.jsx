@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { moviesPart1 } from "./data/movies-part1";
 import { moviesPart2 } from "./data/movies-part2";
@@ -29,6 +29,17 @@ function App() {
   const [poster, setPoster] = useState(null);
   const [posterLoading, setPosterLoading] = useState(false);
   const [infoPage, setInfoPage] = useState(null);
+  const [cookieVisible, setCookieVisible] = useState(false);
+
+  useEffect(() => {
+    const consent = window.localStorage.getItem("pisibox-cookie-consent");
+    if (!consent) setCookieVisible(true);
+  }, []);
+
+  const acceptCookies = () => {
+    window.localStorage.setItem("pisibox-cookie-consent", "accepted");
+    setCookieVisible(false);
+  };
 
   const available = useMemo(() => category === "Tamamen Rastgele" ? movies : movies.filter((item) => item.categories.includes(category)), [category]);
 
@@ -143,6 +154,35 @@ function App() {
           </article>
         </section>
 
+        <section className="guide-content" aria-labelledby="sinema-rehberi">
+          <div className="guide-intro">
+            <span className="content-kicker">SİNEMA REHBERİ</span>
+            <h2 id="sinema-rehberi">Film keşfini daha keyifli hale getiren PisiBox rehberi</h2>
+            <p>Bir sonraki filmi seçmek bazen filmin kendisini izlemekten daha uzun sürebilir. PisiBox, bu kararsızlık anını daha kolay ve eğlenceli hale getirmek için tasarlanmış bir film tavsiye ve keşif platformudur. Aşağıdaki rehber, rastgele seçim mantığının nasıl çalıştığını ve farklı türlerde film ararken nelere dikkat edilebileceğini anlatır.</p>
+          </div>
+
+          <article className="guide-article">
+            <h3>PisiBox Film Keşif Motoru</h3>
+            <p>PisiBox Film Keşif Motoru, kullanıcıların geniş bir film kataloğu içinde kaybolmadan yeni yapımlar keşfetmesine yardımcı olan sade bir öneri deneyimidir. Platformun merkezindeki zar fikri, klasik arama kutularından farklı olarak karar verme yükünü azaltır. Kullanıcı bir kategori belirleyebilir ya da seçimi tamamen şansa bırakabilir. Zar atıldığında uygun film havuzu içinden bir yapım seçilir ve sonuç kartında film adı, yapım yılı, türleri, değerlendirme puanı, kısa tanıtım metni ve uygun olduğunda afiş görseli gösterilir.</p>
+            <p>Bu yaklaşım özellikle belirli bir filmi aramayan, fakat farklı seçenekleri değerlendirmek isteyen sinemaseverler için kullanışlıdır. Film keşfi yalnızca popüler başlıklarla sınırlı kalmak zorunda değildir. Farklı yıllardan yapımların, çeşitli türlerin ve sinema kültüründe öne çıkan filmlerin aynı katalogda bulunması, kullanıcının alışılmış tercihleri dışına çıkmasına yardımcı olabilir. Böylece PisiBox yalnızca bir rastgele seçim düğmesi değil, aynı zamanda yeni sinema deneyimleri için bir başlangıç noktası haline gelir.</p>
+            <p>Keşif deneyiminin bir diğer amacı da kullanıcıya yeterli bilgiyi tek bakışta sunmaktır. Film adı ve yılı temel bağlamı verirken tür etiketleri filmin genel karakteri hakkında fikir verir. Kısa özet, filmin konusu hakkında başlangıç bilgisi sağlar; değerlendirme puanı ise kullanıcıya ek bir referans sunar. Afiş görseli de sonucu daha kolay tanımayı sağlar. Bu bilgiler birlikte değerlendirildiğinde kullanıcı, kendisine sunulan önerinin kendi izleme beklentisine uygun olup olmadığına daha hızlı karar verebilir.</p>
+          </article>
+
+          <article className="guide-article">
+            <h3>Rastgele Film Seçimi Nasıl Çalışır?</h3>
+            <p>PisiBox'ın rastgele seçim sistemi basit bir mantık üzerine kuruludur: önce kullanıcının seçtiği kategoriye uygun film havuzu belirlenir, ardından bu havuzdaki seçeneklerden rastgele bir film seçilir. “Tamamen Rastgele” seçeneğinde kategori filtresi uygulanmaz. Korku, romantik, aksiyon, komedi, dram, anime, bilim kurgu, fantastik, gizem, gerilim veya aile gibi bir tür seçildiğinde ise yalnızca ilgili kategoriyle eşleşen yapımlar değerlendirilir.</p>
+            <p>Rastgele seçim, bir kalite sıralaması anlamına gelmez. PisiBox herhangi bir filmi “en iyi” veya “en kötü” olarak etiketlemek yerine keşif sürecini kolaylaştırır. Sonuç kartındaki değerlendirme puanı, film hakkında bağımsız bir referans olarak sunulur. Kullanıcının kendi zevkleri ise nihai seçimde belirleyici olmaya devam eder. Aynı nedenle tür seçimi de yalnızca teknik bir filtre değildir; o anki ruh haline, izleme ortamına veya arkadaşlarla yapılacak bir film gecesine göre daha uygun seçenekler bulmayı kolaylaştırır.</p>
+            <p>Sonuç seçildiğinde film afişi OMDb üzerinden otomatik olarak alınır. Böylece katalogdaki temel bilgiler ile görsel sunum aynı sonuç alanında birleşir. Afiş bulunamadığında ise kullanıcıya bunun yerine sade bir yedek görünüm gösterilir. Bu yapı, harici veri hizmetlerinde geçici bir sorun yaşansa bile film keşif deneyiminin tamamen kaybolmasını önlemek için tasarlanmıştır.</p>
+          </article>
+
+          <article className="guide-article">
+            <h3>Türe Göre Film Önerileri</h3>
+            <p>Film seçerken tür, en hızlı karar yardımcılarından biridir. <strong>Korku ve gerilim</strong> kategorileri daha yoğun atmosfer, gizem ve merak duygusu arayan izleyiciler için farklı seçenekler sunabilir. <strong>Aksiyon</strong> filmleri hareketli anlatımları ve yüksek tempolarıyla öne çıkarken <strong>bilim kurgu</strong> teknoloji, gelecek, uzay veya alternatif dünyalar gibi fikirleri merkeze alabilir. <strong>Fantastik</strong> yapımlar gerçek dünyanın sınırlarının dışına çıkan evrenler ve karakterlerle daha hayal gücü odaklı bir deneyim sunabilir.</p>
+            <p><strong>Romantik</strong> filmler ilişkiler ve duygusal bağlar üzerinden ilerlerken <strong>dram</strong> karakter gelişimi, çatışma ve insan hikâyelerine daha fazla ağırlık verebilir. Daha hafif bir seçenek arayanlar için <strong>komedi</strong> kategorisi farklı mizah anlayışlarına sahip yapımları keşfetmeye yardımcı olur. <strong>Anime</strong> kategorisi ise animasyonun görsel anlatım gücünü farklı hikâye türleriyle birleştiren filmleri bir araya getirir. <strong>Aile</strong> kategorisi farklı yaş gruplarının birlikte değerlendirebileceği seçenekleri keşfetmek isteyenler için hazırlanmıştır.</p>
+            <p>Bazen ise belirli bir türe karar vermek istememek en iyi başlangıç olabilir. Tamamen rastgele seçim bu durumda devreye girer. Kullanıcı, kategori belirlemeden zar atarak katalogdaki farklı seçeneklerden biriyle karşılaşabilir. Bu yöntem, özellikle daha önce alışılmış türlerin dışına çıkmak ve yeni bir film fikri edinmek isteyenler için eğlenceli bir keşif biçimidir. PisiBox'ın temel yaklaşımı da burada ortaya çıkar: film tavsiyesi ararken tek bir doğru cevap olmadığını kabul etmek ve kullanıcıya kendi zevkine göre değerlendirebileceği yeni seçenekler sunmak.</p>
+          </article>
+        </section>
+
         <section className="ad-grid" aria-label="Reklam alanları">
           {[1,2,3,4,5,6].map((slot) => <div className="ad-slot" key={slot}><span>Reklam</span><div className="ad-slot-inner" /></div>)}
         </section>
@@ -203,6 +243,15 @@ function App() {
             </>}
           </section>
         </div>
+      )}
+      {cookieVisible && (
+        <aside className="cookie-banner" role="dialog" aria-label="Çerez bildirimi">
+          <div>
+            <strong>Çerez ve gizlilik bildirimi</strong>
+            <p>PisiBox, temel site işlevleri ve tercihlerin hatırlanması için gerekli teknolojileri kullanabilir. Google AdSense kullanıldığında reklam çerezleri ve kişiselleştirilmiş reklamlar için ilgili gizlilik ve kullanıcı rızası kuralları uygulanır. Detaylar için <button onClick={() => setInfoPage("privacy")}>Gizlilik Politikası</button> sayfasına göz atabilirsin.</p>
+          </div>
+          <button className="cookie-accept" onClick={acceptCookies}>Kabul Et</button>
+        </aside>
       )}
     </div>
   );
