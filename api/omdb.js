@@ -1,4 +1,4 @@
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   const { title, year } = req.query || {};
 
   if (!title) {
@@ -40,4 +40,4 @@ module.exports = async function handler(req, res) {
       Error: "OMDb servisine ulaşılamadı.",
     });
   }
-};
+}
