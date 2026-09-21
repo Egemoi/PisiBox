@@ -337,7 +337,7 @@ function App() {
 
           <div className="category-grid">
             {filtered.map((category) => (
-              <article className={`category-card tone-${category.tone}`} key={category.name} onClick={() => setSearch(category.name)}>
+              <article className={`category-card tone-${category.tone}`} key={category.name} onClick={() => category.name === "Korku" ? (setCategoryPage("Korku"), setMovieFilter(""), setSearch("")) : setSearch(category.name)}>
                 <div className="card-shine" />
                 <div className="card-character" aria-hidden="true">{category.character}</div>
                 <div className="card-info">
