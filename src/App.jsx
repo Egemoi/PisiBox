@@ -50,6 +50,9 @@ function App() {
         <section className={movie?"result-panel has-result":"result-panel"}>
           {movie ? <div className="movie-result"><div className="poster-art"><span>🎬</span><strong>⭐ {movie.rating}</strong></div><div className="result-copy"><span className="result-kicker">{movie.categories.join(" · ")}</span><h2>{movie.title}</h2><small>{movie.year}</small><p>{movie.summary}</p><button className="again" onClick={roll}>🎲 Bir daha at</button></div></div> : <div className="empty-result"><div className="film-icon">▣</div><h3>Henüz film yok.</h3><p>Zarı atarak senin için bir film önerelim!</p></div>}
         </section>
+        <section className="ad-grid" aria-label="Reklam alanları">
+          {[1,2,3,4,5,6].map((slot) => <div className="ad-slot" key={slot}><span>Reklam</span><div className="ad-slot-inner" /></div>)}
+        </section>
       </main>
       <footer>“İyi filmler, zor zamanları daha katlanılabilir kılar.”</footer>
     </div>
