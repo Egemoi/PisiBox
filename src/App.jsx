@@ -53,7 +53,7 @@ function App() {
   const [chatOpen, setChatOpen] = useState(true);
   const [message, setMessage] = useState("");
   const [authMode, setAuthMode] = useState(null);
-  const [authEmail, setAuthEmail] = useState("");
+  const [authUsername, setAuthUsername] = useState("");
   const [authPassword, setAuthPassword] = useState("");
   const [authName, setAuthName] = useState("");
   const [authError, setAuthError] = useState("");
@@ -154,7 +154,7 @@ function App() {
   const openAuth = (mode) => {
     setAuthMode(mode);
     setAuthError("");
-    setAuthEmail("");
+    setAuthUsername("");
     setAuthPassword("");
     setAuthName("");
   };
@@ -168,21 +168,23 @@ function App() {
     }
     setAuthLoading(true);
     try {
+      const username = authUsername.trim().toLowerCase();
+      const internalEmail = username + "@accounts.pisibox.local";
       if (authMode === "register") {
         const { data, error } = await supabase.auth.signUp({
-          email: authEmail,
+          email: internalEmail,
           password: authPassword,
-          options: { data: { display_name: authName } },
+          options: { data: { display_name: authName.trim() || username, username } },
         });
         if (error) throw error;
         if (!data.session) {
-          setAuthError("Kayıt başarılı! E-posta adresini doğrulaman gerekiyorsa gelen kutunu kontrol et.");
+          setAuthError("Kayıt oluşturulamadı. Supabase Email provider ayarını kontrol et.");
         } else {
           setAuthMode(null);
         }
       } else {
         const { error } = await supabase.auth.signInWithPassword({
-          email: authEmail,
+          email: internalEmail,
           password: authPassword,
         });
         if (error) throw error;
@@ -378,10 +380,10 @@ function App() {
             <h2>{authMode === "register" ? "Hesabını oluştur" : "Giriş yap"}</h2>
             <p className="auth-subtitle">{authMode === "register" ? "Favorilerini ve keşiflerini hesabında sakla." : "PisiBox hesabına devam et."}</p>
             <form onSubmit={submitAuth} className="auth-form">
+              <label>Kullanıcı adı<input value={authUsername} onChange={(e) => setAuthUsername(e.target.value.replace(/[^a-zA-Z0-9_.-]/g, ""))} placeholder="kullaniciadi" minLength={3} maxLength={24} required /></label>
               {authMode === "register" && (
-                <label>Ad / kullanıcı adı<input value={authName} onChange={(e) => setAuthName(e.target.value)} placeholder="Mete" required /></label>
+                <label>Görünen ad<input value={authName} onChange={(e) => setAuthName(e.target.value)} placeholder="Mete" maxLength={30} /></label>
               )}
-              <label>E-posta<input type="email" value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} placeholder="ornek@mail.com" required /></label>
               <label>Şifre<input type="password" value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} placeholder="En az 6 karakter" minLength={6} required /></label>
               {authError && <div className="auth-error">{authError}</div>}
               <button className="primary-btn auth-submit" disabled={authLoading}>{authLoading ? "Bekle..." : authMode === "register" ? "Kayıt Ol" : "Giriş Yap"}</button>
