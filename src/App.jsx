@@ -28,6 +28,7 @@ function App() {
   const [movie, setMovie] = useState(null);
   const [poster, setPoster] = useState(null);
   const [posterLoading, setPosterLoading] = useState(false);
+  const [infoPage, setInfoPage] = useState(null);
 
   const available = useMemo(() => category === "Tamamen Rastgele" ? movies : movies.filter((item) => item.categories.includes(category)), [category]);
 
@@ -111,11 +112,98 @@ function App() {
               <strong>⭐ {movie.rating}</strong>
             </div><div className="result-copy"><span className="result-kicker">{movie.categories.join(" · ")}</span><h2>{movie.title}</h2><small>{movie.year}</small><p>{movie.summary}</p><button className="again" onClick={roll}>🎲 Bir daha at</button></div></div> : <div className="empty-result"><div className="film-icon">▣</div><h3>Henüz film yok.</h3><p>Zarı atarak senin için bir film önerelim!</p></div>}
         </section>
+        <section className="seo-content">
+          <div className="content-heading">
+            <span className="content-kicker">PISIBOX HAKKINDA</span>
+            <h2>Film seçimini kolaylaştıran sade bir keşif deneyimi</h2>
+            <p>PisiBox, ne izleyeceğine karar vermekte zorlanan sinemaseverler için hazırlanmış bağımsız bir rastgele film öneri aracıdır. Amacımız, uzun listeler arasında kaybolmak yerine birkaç saniye içinde yeni bir film keşfetmeni sağlamaktır.</p>
+          </div>
+
+          <article className="seo-article">
+            <h3>PisiBox Rastgele Film Öneri Motoru Nedir?</h3>
+            <p>PisiBox Rastgele Film Öneri Motoru, film seçme sürecini eğlenceli ve pratik hale getiren bir keşif sistemidir. Kullanıcı herhangi bir kategori seçmeden tamamen rastgele bir seçim yapabilir veya korku, romantik, aksiyon, komedi, dram, anime, bilim kurgu, fantastik, gizem, gerilim ve aile gibi kategorilerden birini belirleyebilir. Ardından zar atılarak film kataloğundaki uygun seçeneklerden biri seçilir ve filmin adı, yılı, puanı, türleri, kısa açıklaması ve mevcut olduğunda afişi ekranda gösterilir. Böylece özellikle “Ne izlesem?” sorusuna saatlerce cevap arayan kullanıcılar için hızlı bir başlangıç noktası oluşur.</p>
+            <p>Öneri sistemi, tek bir türe bağlı kalmak istemeyen kullanıcıların da yeni yapımlarla karşılaşabilmesine olanak tanır. Rastgele seçim yaklaşımı, daha önce karşılaşılmamış filmleri keşfetmeyi teşvik ederken kategori seçimi kullanıcının o anki izleme isteğini korur. PisiBox'ın temel fikri, film seçimini karmaşıklaştırmak yerine karar vermenin eğlenceli bir parçası haline getirmektir.</p>
+          </article>
+
+          <article className="seo-article">
+            <h3>Film Seçim Algoritmamız Nasıl Çalışır?</h3>
+            <p>PisiBox'ta film kataloğu farklı dönemlerden, türlerden ve sinema anlayışlarından yapımları bir araya getirir. Katalogda aksiyon ve gerilimden bilim kurguya, fantastikten dram ve romantik filmlere kadar farklı kategoriler bulunur. Sinema klasikleri, popüler yapımlar, anime filmleri ve farklı türleri bir araya getiren seçenekler aynı keşif deneyiminin içinde yer alır.</p>
+            <p>Kullanıcı bir kategori seçtiğinde sistem yalnızca o kategoriyle eşleşen filmler arasından seçim yapar. “Tamamen Rastgele” seçeneğinde ise katalogdaki uygun filmler arasından seçim yapılır. Sonuç ekranında yer alan IMDb puanı, filmin değerlendirme bilgisini tanımlayan bir referans olarak gösterilir; PisiBox bu puanı kendi başına değiştirmez veya film hakkında yalnızca puana göre bir hüküm vermez. Seçilen filmin afişi ise OMDb üzerinden otomatik olarak alınır. Böylece kullanıcı, önerinin temel bilgilerini tek bir ekranda görebilir.</p>
+          </article>
+
+          <article className="seo-article">
+            <h3>Neden PisiBox?</h3>
+            <p>PisiBox'ın amacı, film arama sürecindeki gereksiz zaman kaybını azaltmak ve keşif deneyimini mümkün olduğunca sade tutmaktır. Uzun listeler arasında gezinmek yerine bir kategori seçip zarı atabilir, birkaç saniye içinde bir öneri alabilirsin. Kullanıcı hesabı oluşturmak veya karmaşık bir profil hazırlamak gerektirmeden doğrudan film keşfine odaklanır.</p>
+            <ul className="seo-list">
+              <li><strong>Hızlı keşif:</strong> Film seçmek için uzun listeler arasında dolaşmak yerine tek bir zar atışı yeterlidir.</li>
+              <li><strong>Farklı türler:</strong> Korku, romantik, aksiyon, komedi, dram, anime, bilim kurgu ve daha birçok kategori arasından seçim yapabilirsin.</li>
+              <li><strong>Sade arayüz:</strong> Film adı, yıl, puan, tür, açıklama ve afiş gibi temel bilgiler tek bir sonuç kartında sunulur.</li>
+              <li><strong>Yeni filmler keşfet:</strong> Rastgele seçim mantığı, normalde arama listelerinde karşılaşmayabileceğin yapımlara ulaşmana yardımcı olur.</li>
+            </ul>
+          </article>
+        </section>
+
         <section className="ad-grid" aria-label="Reklam alanları">
           {[1,2,3,4,5,6].map((slot) => <div className="ad-slot" key={slot}><span>Reklam</span><div className="ad-slot-inner" /></div>)}
         </section>
       </main>
-      <footer>“İyi filmler, zor zamanları daha katlanılabilir kılar.”</footer>
+      <footer className="site-footer">
+        <div className="footer-quote">“İyi filmler, zor zamanları daha katlanılabilir kılar.”</div>
+        <div className="footer-links">
+          <button onClick={() => setInfoPage("about")}>Hakkımızda</button>
+          <button onClick={() => setInfoPage("privacy")}>Gizlilik Politikası</button>
+          <button onClick={() => setInfoPage("contact")}>İletişim</button>
+        </div>
+        <small>© 2026 PisiBox. Tüm hakları saklıdır.</small>
+      </footer>
+
+      {infoPage && (
+        <div className="info-modal-backdrop" role="presentation" onClick={() => setInfoPage(null)}>
+          <section className="info-modal" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
+            <button className="modal-close" onClick={() => setInfoPage(null)} aria-label="Pencereyi kapat">×</button>
+            {infoPage === "about" && <>
+              <span className="content-kicker">PISIBOX</span>
+              <h2>Hakkımızda</h2>
+              <p>PisiBox, sinemaseverlerin film seçme sürecini kolaylaştırmak amacıyla oluşturulmuş bağımsız bir film keşif projesidir. Projenin temel fikri basittir: Kullanıcıların uzun öneri listeleri arasında kaybolmadan, birkaç saniye içinde izleyebilecekleri bir filmle karşılaşabilmesini sağlamak.</p>
+              <p>PisiBox'ta farklı film türlerini tek bir yerde keşfetmek mümkündür. Korku, romantik, aksiyon, komedi, dram, anime, bilim kurgu, fantastik, gizem, gerilim ve aile kategorileri; farklı izleme alışkanlıklarına ve ruh hallerine göre seçim yapmayı kolaylaştırır. Tamamen rastgele seçim seçeneği ise herhangi bir kategoriye bağlı kalmadan yeni filmler keşfetmek isteyen kullanıcılar için hazırlanmıştır.</p>
+              <p>Projemizin vizyonu, film keşfini daha erişilebilir, anlaşılır ve eğlenceli hale getirmektir. PisiBox bir film eleştirmeni veya yapımcı değildir; kullanıcıya seçim yapması için pratik bir keşif aracı sunar. Film bilgilerinin yanında gösterilen dış kaynaklı veriler ilgili kaynakların sunduğu bilgilere dayanır.</p>
+            </>}
+
+            {infoPage === "privacy" && <>
+              <span className="content-kicker">GİZLİLİK</span>
+              <h2>Gizlilik Politikası</h2>
+              <p><strong>Son güncelleme: 21.09.2026</strong></p>
+              <h3>1. Kapsam</h3>
+              <p>Bu Gizlilik Politikası, PisiBox web sitesini ziyaret eden kişilerin gizliliğini korumak ve site kullanımı sırasında işlenebilecek bilgiler hakkında şeffaf bilgi vermek amacıyla hazırlanmıştır. PisiBox, kullanıcıların film keşfetme deneyimi için gerekli olmayan kişisel bilgileri talep etmemeyi amaçlar.</p>
+              <h3>2. Teknik bilgiler ve log kayıtları</h3>
+              <p>Siteyi sunan altyapı sağlayıcıları güvenlik, hata ayıklama ve hizmetin çalıştırılması amacıyla IP adresi, tarayıcı türü, işletim sistemi, istek zamanı ve ziyaret edilen kaynak gibi teknik kayıtlar tutabilir. Bu kayıtların kapsamı ve saklama süresi ilgili altyapı sağlayıcısının politikalarına tabidir.</p>
+              <h3>3. Çerezler ve benzeri teknolojiler</h3>
+              <p>PisiBox veya sitede kullanılan üçüncü taraf hizmetler, hizmetin çalışması, performans ölçümü ve reklamların sunulması amacıyla çerezler veya benzeri teknolojiler kullanabilir. Kullanılan reklam hizmetlerine bağlı olarak üçüncü taraf sağlayıcılar, kullanıcının ilgi alanlarına dayalı reklam göstermek veya reklam performansını ölçmek için bilgi işleyebilir. Tarayıcı ayarlarından çerezleri yönetebilir veya devre dışı bırakabilirsin; bunun bazı site özellikleri üzerinde etkisi olabilir.</p>
+              <h3>4. Google AdSense ve üçüncü taraf hizmetler</h3>
+              <p>Bu sitede Google AdSense gibi üçüncü taraf reklam hizmetleri kullanılabilir. Bu hizmetler reklam sunmak, ölçüm yapmak ve reklamların performansını değerlendirmek için çerezler veya benzeri teknolojiler kullanabilir. Google'ın reklam teknolojileri ve kişiselleştirilmiş reklam seçenekleri hakkında güncel bilgiler için Google'ın kendi gizlilik ve reklam ayarları sayfalarına başvurulmalıdır.</p>
+              <h3>5. Film ve afiş verileri</h3>
+              <p>Film afişleri ve bazı film bilgileri üçüncü taraf film veri hizmetleri aracılığıyla alınabilir. Bu hizmetlere yapılan isteklerde film adı ve yılı gibi filmle ilgili teknik parametreler kullanılabilir. PisiBox, kullanıcıdan bu amaçla ad, telefon veya benzeri doğrudan kimlik bilgileri istemez.</p>
+              <h3>6. Kişisel verilerin paylaşılması</h3>
+              <p>PisiBox, yasal bir yükümlülük bulunmadıkça veya hizmetin teknik olarak sağlanması için gerekli olmadıkça kullanıcıların doğrudan verdiği kişisel bilgileri üçüncü kişilere satmayı veya kiralamayı amaçlamaz. Üçüncü taraf hizmetlerin kendi veri işleme uygulamaları kendi gizlilik politikalarına tabidir.</p>
+              <h3>7. Haklar ve iletişim</h3>
+              <p>Gizlilik uygulamalarımız hakkında soru, talep veya bildirimlerin için <a href="mailto:iletisim@pisibox.com">iletisim@pisibox.com</a> adresinden bizimle iletişime geçebilirsin. Bu metin genel bilgilendirme amacı taşır; yürürlükteki mevzuat ve kullanılan üçüncü taraf hizmetlerdeki değişikliklere göre güncellenebilir.</p>
+            </>}
+
+            {infoPage === "contact" && <>
+              <span className="content-kicker">İLETİŞİM</span>
+              <h2>İletişim</h2>
+              <p>PisiBox hakkında geri bildirim, öneri, teknik hata bildirimi veya içerikle ilgili bir talebin varsa bizimle iletişime geçebilirsin. Kullanıcı deneyimini geliştirmek için gönderilen görüşleri değerlendiriyor ve sitedeki sorunları mümkün olduğunca hızlı şekilde incelemeyi amaçlıyoruz.</p>
+              <div className="contact-card">
+                <span>Genel iletişim</span>
+                <a href="mailto:iletisim@pisibox.com">iletisim@pisibox.com</a>
+              </div>
+              <h3>Telif hakkı bildirimleri</h3>
+              <p>Bir film afişi, görsel, metin veya başka bir içeriğin hak sahibiysen ve PisiBox'taki kullanımına ilişkin bir bildirimde bulunmak istiyorsan, ilgili içeriğin açıkça tanımlandığı bir açıklamayı ve talebini e-posta yoluyla iletebilirsin. Bildirimler incelenerek gerekli görülen işlemler değerlendirilir.</p>
+              <p><strong>Not:</strong> Bu e-posta adresi iletişim için yer tutucu olarak kullanılmaktadır. Yayına almadan önce alan adına bağlı gerçek bir iletişim adresiyle değiştirilmesi önerilir.</p>
+            </>}
+          </section>
+        </div>
+      )}
     </div>
   );
 }
