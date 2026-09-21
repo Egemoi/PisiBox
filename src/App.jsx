@@ -19,9 +19,9 @@ const posterUrl = (title, year) => {
   return `/api/omdb?${params.toString()}`;
 };
 
-const movies = Object.values([...moviesPart1, ...moviesPart2, ...moviesPart3, ...moviesPart4, ...moviesPart5, ...moviesPart6, ...moviesPart7, ...moviesPart8].reduce((map, item) => { map[item.title] = withPlatforms(item); return map; }, {}));
+const categories = ["Tamamen Rastgele","Korku","Romantik","Aksiyon","Komedi","Dram","Anime","Bilim Kurgu","Fantastik","Gizem","Gerilim","Aile"];
 
-const categories = ["Tamamen Rastgele","Korku","Romantik","Aksiyon","Komedi","Dram","Anime","Bilim Kurgu","Fantastik","Gizem","Gerilim","Aile"];\nconst platformOverrides = {
+const platformOverrides = {
   "Sicario": ["Netflix", "Prime Video"],
   "Toy Story": ["Disney+"],
   "Spirited Away": ["MUBI"],
@@ -47,7 +47,6 @@ const categories = ["Tamamen Rastgele","Korku","Romantik","Aksiyon","Komedi","Dr
   "WALL-E": ["Disney+"],
   "Big Hero 6": ["Disney+"],
   "Zootopia": ["Disney+"],
-  "Soul": ["Disney+"],
   "Black Panther": ["Disney+"],
   "Avengers: Endgame": ["Disney+"],
   "Avengers: Infinity War": ["Disney+"],
@@ -64,10 +63,20 @@ const categories = ["Tamamen Rastgele","Korku","Romantik","Aksiyon","Komedi","Dr
   "Thor: The Dark World": ["Disney+"],
   "The Avengers": ["Disney+"]
 };
+
 const withPlatforms = (item) => {
   const platforms = platformOverrides[item.title];
-  return platforms ? { ...item, platforms } : item;
+  return platforms?.length ? { ...item, platforms } : item;
 };
+
+const movies = Object.values(
+  [...moviesPart1, ...moviesPart2, ...moviesPart3, ...moviesPart4, ...moviesPart5, ...moviesPart6, ...moviesPart7, ...moviesPart8]
+    .reduce((map, item) => {
+      map[item.title] = withPlatforms(item);
+      return map;
+    }, {})
+);
+
 const WATCHLIST_KEY = "pisibox-watchlist";
 const WATCHED_KEY = "pisibox-watched";
 const SOUND_KEY = "pisibox-dice-sound";
@@ -413,25 +422,14 @@ function App() {
               <strong>⭐ {movie.rating}</strong>
             </div><div className="result-copy"><span className="result-kicker">{movie.categories.join(" · ")}</span><h2>{movie.title}</h2><small>{movie.year}</small><p>{movie.summary}</p>{Array.isArray(movie.platforms) && movie.platforms.length > 0 && (
   <div style={{marginTop:16}}>
-    <div style={{fontSize:12,color:"rgba(255,255,255,.55)",fontWeight:600,marginBottom:8}}>Nerede İzlenir?</div>
-    <div style={{display:"flex",flexWrap:"wrap",gap:8,alignItems:"center"}}>
-      {movie.platforms.map((platform) => {
-        const styles = {
-          "Netflix": ["#e50914","rgba(229,9,20,.07)"],
-          "Prime Video": ["#1e90ff","rgba(30,144,255,.07)"],
-          "Disney+": ["#5b9cff","rgba(91,156,255,.07)"],
-          "BluTV": ["#35c98b","rgba(53,201,139,.06)"],
-          "MUBI": ["#b65cff","rgba(182,92,255,.07)"]
-        };
-        const [dot, background] = styles[platform] || ["#aeb7c6","rgba(255,255,255,.05)"];
-        return (
-          <span key={platform} style={{display:"inline-flex",alignItems:"center",gap:6,padding:"4px 10px",borderRadius:999,fontSize:12,fontWeight:600,background,border:"1px solid rgba(255,255,255,.1)",color:"rgba(255,255,255,.82)"}}>
-            <i style={{width:6,height:6,borderRadius:"50%",background:dot,display:"inline-block"}} />{platform}
-          </span>
-        );
-      })}
+    <span style={{display:"block",fontSize:12,color:"rgba(255,255,255,.55)",fontWeight:500,marginBottom:8}}>Nerede İzlenir?</span>
+    <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+      {movie.platforms.map((platform, idx) => (
+        <span key={idx} style={{display:"inline-flex",alignItems:"center",padding:"4px 10px",borderRadius:999,fontSize:12,fontWeight:600,background:"rgba(255,255,255,.05)",border:"1px solid rgba(255,255,255,.1)",color:"rgba(255,255,255,.82)"}}>
+          {platform}
+        </span>
+      ))}
     </div>
-    <p style={{margin:"8px 0 0",fontSize:11,color:"rgba(255,255,255,.42)"}}>Platform etiketleri keşif amaçlıdır; güncel katalog uygunluğu doğrulanmamıştır.</p>
   </div>
 )}
 <div style={{display:"flex",flexWrap:"wrap",gap:12,alignItems:"center",marginTop:18}}>
