@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 const categories = [
   { name: "Korku", count: 348, icon: "☠", tone: "red", character: "👻", tag: "Karanlık ve ürpertici" },
-  { name: "Aksiyon", count: 729, icon: "⚔", tone: "blue", character: "🥷", tag: "Adrenalin dolu" },
+  { name: "Aksiyon", count: 729, icon: "🥷", tone: "blue", character: "🥷", tag: "Adrenalin dolu" },
   { name: "Komedi", count: 521, icon: "☻", tone: "amber", character: "😂", tag: "Bol kahkaha" },
   { name: "Dram", count: 634, icon: "◆", tone: "violet", character: "🎭", tag: "Duygusal hikâyeler" },
   { name: "Anime", count: 583, icon: "✦", tone: "pink", character: "⚔️", tag: "Anime evreni" },
@@ -12,6 +12,17 @@ const categories = [
   { name: "Gizem", count: 276, icon: "?", tone: "indigo", character: "🕵️", tag: "Sırları çöz" },
   { name: "Gerilim", count: 439, icon: "!", tone: "crimson", character: "👹", tag: "Tansiyon yükseliyor" },
   { name: "Aile", count: 287, icon: "⌂", tone: "lime", character: "🧸", tag: "Herkese uygun" },
+];
+
+const titles = [
+  { id:"inception", title:"Inception", type:"Film", year:2010, genre:["Bilim Kurgu","Aksiyon","Gizem"], rating:8.8, emoji:"🌀", desc:"Rüyaların içine girerek fikir çalma ve yerleştirme üzerine kurulu bir bilim kurgu gerilimi." },
+  { id:"dark", title:"Dark", type:"Dizi", year:2017, genre:["Gizem","Gerilim","Bilim Kurgu"], rating:8.7, emoji:"🕰️", desc:"Küçük bir kasabada kaybolan bir çocuk, dört ailenin nesiller boyunca uzanan sırlarını ortaya çıkarır." },
+  { id:"alice", title:"Alice in Borderland", type:"Dizi", year:2020, genre:["Aksiyon","Gerilim","Gizem"], rating:7.7, emoji:"🃏", desc:"Boş bir Tokyo'da hayatta kalmak için ölümcül oyunlara katılan gençlerin hikâyesi." },
+  { id:"aot", title:"Attack on Titan", type:"Anime", year:2013, genre:["Anime","Aksiyon","Dram"], rating:9.1, emoji:"⚔️", desc:"İnsanlığın devlere karşı verdiği hayatta kalma mücadelesi." },
+  { id:"spirited", title:"Spirited Away", type:"Anime", year:2001, genre:["Anime","Fantastik","Aile"], rating:8.6, emoji:"🌌", desc:"Gizemli bir ruhlar dünyasında ailesini kurtarmaya çalışan genç bir kız." },
+  { id:"parasite", title:"Parasite", type:"Film", year:2019, genre:["Dram","Gerilim","Gizem"], rating:8.5, emoji:"🏠", desc:"İki ailenin hayatlarının beklenmedik biçimde kesiştiği toplumsal gerilim." },
+  { id:"squid", title:"Squid Game", type:"Dizi", year:2021, genre:["Gerilim","Dram","Gizem"], rating:8.0, emoji:"🎭", desc:"Büyük bir ödül için ölümcül çocuk oyunlarına katılan insanların hikâyesi." },
+  { id:"interstellar", title:"Interstellar", type:"Film", year:2014, genre:["Bilim Kurgu","Dram","Fantastik"], rating:8.7, emoji:"🚀", desc:"İnsanlığın geleceği için yıldızlararası bir yolculuğa çıkan astronotların hikâyesi." },
 ];
 
 const slides = [
@@ -63,7 +74,7 @@ function App() {
   const [profileAvatar, setProfileAvatar] = useState("");
   const [profilePreview, setProfilePreview] = useState("");
   const [profileError, setProfileError] = useState("");
-  const [profileLoading, setProfileLoading] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(false);\n  const [selectedTitle, setSelectedTitle] = useState(null);\n  const [favorites, setFavorites] = useState(() => JSON.parse(localStorage.getItem("pisibox_favorites") || "[]"));\n  const [ratings, setRatings] = useState(() => JSON.parse(localStorage.getItem("pisibox_ratings") || "{}"));\n  const [profilePage, setProfilePage] = useState(false);
 
   const slide = slides[slideIndex];
 
@@ -298,18 +309,18 @@ function App() {
           </form>
         </section>
 
-        <section className="section" id="categories">
+        {search && (\n        <section className="section search-results">\n          <div className="section-head"><div><span className="section-kicker">ARAMA</span><h2>Yapımlar</h2></div></div>\n          <div className="title-grid">{searchResults.map(item=><article className="title-card" key={item.id} onClick={()=>setSelectedTitle(item)}><div className="poster">{item.emoji}<span>⭐ {item.rating}</span></div><div className="title-card-body"><b>{item.title}</b><small>{item.type} · {item.year}</small><p>{item.genre.join(" · ")}</p></div></article>)}</div>\n        </section>\n      )}\n\n      <section className="section" id="categories">
           <div className="section-head">
             <div>
               <span className="section-kicker">KEŞFET</span>
               <h2>Kategoriler</h2>
             </div>
-            <button className="text-btn">Tümünü Gör <span>→</span></button>
+            <button className="text-btn" onClick={() => setSearch("")}>Tümünü Gör <span>→</span></button>
           </div>
 
           <div className="category-grid">
             {filtered.map((category) => (
-              <article className={`category-card tone-${category.tone}`} key={category.name}>
+              <article className={`category-card tone-${category.tone}`} key={category.name} onClick={() => setSearch(category.name)}>
                 <div className="card-shine" />
                 <div className="card-character" aria-hidden="true">{category.character}</div>
                 <div className="card-info">
@@ -335,7 +346,7 @@ function App() {
               <h2>Şu An PisiBox'ta</h2>
             </div>
           </div>
-          <div className="trend-grid">
+          <div className="title-grid featured-grid">{titles.slice(0,4).map(item=><article className="title-card" key={item.id} onClick={()=>setSelectedTitle(item)}><div className="poster">{item.emoji}<span>⭐ {item.rating}</span></div><div className="title-card-body"><b>{item.title}</b><small>{item.type} · {item.year}</small><p>{item.genre.join(" · ")}</p></div></article>)}</div>\n          <div className="trend-grid">
             <div className="trend-card"><span>🔥</span><div><b>En çok konuşulanlar</b><small>Toplulukta yükselen yapımlar</small></div></div>
             <div className="trend-card"><span>⭐</span><div><b>Yüksek puanlılar</b><small>Favorilerini keşfet</small></div></div>
             <div className="trend-card"><span>🆕</span><div><b>Yeni eklenenler</b><small>Aramıza yeni katılanlar</small></div></div>
@@ -353,7 +364,11 @@ function App() {
       </main>
 
 
-      {profileOpen && (
+
+      {selectedTitle && <div className="auth-overlay" onMouseDown={e=>{if(e.target===e.currentTarget)setSelectedTitle(null)}}><div className="detail-modal"><button className="auth-close" onClick={()=>setSelectedTitle(null)}>×</button><div className="detail-poster">{selectedTitle.emoji}<strong>⭐ {selectedTitle.rating}</strong></div><div className="detail-content"><span className="section-kicker">{selectedTitle.type.toUpperCase()}</span><h2>{selectedTitle.title}</h2><small>{selectedTitle.year} · {selectedTitle.genre.join(" · ")}</small><p>{selectedTitle.desc}</p><div className="detail-actions"><button className="primary-btn" onClick={()=>toggleFavorite(selectedTitle.id)}>{favorites.includes(selectedTitle.id)?"♥ Favorilerde":"♡ Favorilere Ekle"}</button><button className="glass-btn" onClick={()=>setProfilePage(true)}>Profilim</button></div><div className="rating-row"><span>Senin puanın:</span>{[1,2,3,4,5].map(n=><button key={n} className={ratings[selectedTitle.id]>=n?"rated":""} onClick={()=>rateTitle(selectedTitle.id,n)}>★</button>)}</div></div></div></div>}
+
+      {profilePage && <div className="auth-overlay" onMouseDown={e=>{if(e.target===e.currentTarget)setProfilePage(false)}}><div className="profile-page"><button className="auth-close" onClick={()=>setProfilePage(false)}>×</button><div className="profile-hero">{user?.user_metadata?.avatar_url?<img src={user.user_metadata.avatar_url} alt=""/>:<span>👤</span>}<div><span className="section-kicker">PISIBOX PROFİLİ</span><h2>{user?.user_metadata?.display_name}</h2><small>@{user?.user_metadata?.username}</small></div></div><h3>Favorilerim</h3><div className="title-grid">{titles.filter(x=>favorites.includes(x.id)).map(item=><article className="title-card" key={item.id} onClick={()=>{setSelectedTitle(item);setProfilePage(false)}}><div className="poster">{item.emoji}<span>⭐ {item.rating}</span></div><div className="title-card-body"><b>{item.title}</b><small>{item.type} · {item.year}</small></div></article>)}</div>{!favorites.length&&<p className="empty">Henüz favorin yok. Beğendiğin yapımları favorilere ekle.</p>}</div></div>}
+\n      {profileOpen && (
         <div className="auth-overlay" onMouseDown={(event) => {
           if (event.target === event.currentTarget) setProfileOpen(false);
         }}>
