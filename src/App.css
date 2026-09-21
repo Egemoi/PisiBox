@@ -462,3 +462,15 @@ footer p { font-size: 12px; }
 .auth-switch { width:100%; margin-top:17px; border:0; background:transparent; color:rgba(255,255,255,.55); font-size:11px; }
 .auth-switch:hover { color:#fff; }
 @media (max-width:650px) { .user-badge { display:none; } .auth-modal { padding:28px 22px; } }
+
+.profile-mini{display:flex;align-items:center;gap:8px;max-width:180px;padding:4px 10px 4px 5px;border:1px solid rgba(255,255,255,.1);border-radius:999px;background:rgba(255,255,255,.055);color:#fff}
+.profile-mini img,.profile-mini>span{width:30px;height:30px;border-radius:50%;object-fit:cover;display:grid;place-items:center;background:rgba(255,255,255,.1);font-size:15px}
+.profile-mini b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;font-weight:700}
+.profile-modal{max-height:90vh;overflow:auto}
+.avatar-editor{display:grid;justify-items:center;gap:9px;margin:3px 0 6px}
+.avatar-preview{width:112px;height:112px;border-radius:50%;overflow:hidden;display:grid;place-items:center;background:linear-gradient(145deg,#292932,#101014);border:2px solid rgba(255,255,255,.14);box-shadow:0 12px 35px rgba(0,0,0,.35);font-size:40px}
+.avatar-preview img{width:100%;height:100%;object-fit:cover}
+.avatar-upload{position:relative;overflow:hidden;padding:9px 13px;border:1px solid rgba(255,255,255,.12);border-radius:9px;background:rgba(255,255,255,.06);color:#fff;font-size:11px;cursor:pointer}
+.avatar-upload input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.avatar-editor small{color:rgba(255,255,255,.32);font-size:9px}
+@media (max-width:650px){.profile-mini b{display:none}.profile-mini{padding-right:5px}}
