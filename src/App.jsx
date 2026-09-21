@@ -57,6 +57,7 @@ function App() {
     try { const saved = window.localStorage.getItem(SOUND_KEY); return saved === null ? true : saved === "true"; } catch { return true; }
   });
   const [dailyPoster, setDailyPoster] = useState(null);
+  const [rollMessage, setRollMessage] = useState("");
   const dailyMovie = useMemo(() => getDailyMovie(), []);
 
   useEffect(() => {
@@ -77,23 +78,37 @@ function App() {
   }, [category, watchedKeys]);
 
   const fetchPoster = async (selectedMovie, updateMain = true) => {
-    if (!selectedMovie?.title) return null;
-    const cacheKey = `${selectedMovie.title}|${selectedMovie.year}`;
+    if (!selectedMovie?.title) {
+      if (updateMain) setPosterLoading(false);
+      return null;
+    }
+
+    const cacheKey = selectedMovie.title + "|" + selectedMovie.year;
+
     if (posterCache.has(cacheKey)) {
       const cached = posterCache.get(cacheKey);
-      if (updateMain) setPoster(cached);
+      if (updateMain) {
+        setPoster(cached);
+        setPosterLoading(false);
+      }
       return cached;
     }
-    if (updateMain) { setPosterLoading(true); setPoster(null); }
+
+    if (updateMain) {
+      setPosterLoading(true);
+      setPoster(null);
+    }
+
     try {
       const response = await fetch(posterUrl(selectedMovie.title, selectedMovie.year));
+      if (!response.ok) throw new Error("OMDb HTTP " + response.status);
       const data = await response.json();
-      const url = data.Response === "True" && data.Poster && data.Poster !== "N/A" ? data.Poster : null;
+      const url = data?.Response === "True" && data?.Poster && data.Poster !== "N/A" ? data.Poster : null;
       posterCache.set(cacheKey, url);
       if (updateMain) setPoster(url);
       return url;
     } catch (error) {
-      console.error("OMDb poster alınamadı:", error);
+      console.warn("OMDb afiş isteği başarısız; yerel film verisi kullanılmaya devam ediyor:", error);
       if (updateMain) setPoster(null);
       return null;
     } finally {
@@ -144,30 +159,71 @@ function App() {
   };
 
   const roll = (watchedList = watched) => {
-    const watchedSet = new Set(watchedList.map((item) => movieKey(item)));
-    const fullPool = category === "Tamamen Rastgele"
-      ? movies
-      : movies.filter((item) => item.categories.includes(category));
-    let pool = fullPool.filter((item) => !watchedSet.has(movieKey(item)));
+    setRollMessage("");
 
-    if (!pool.length) {
-      // Tüm uygun filmler izlendiğinde zar kilitlenmesin: geçmişi sıfırla
-      // ve aynı havuzdan yeniden rastgele seçim yapmaya devam et.
-      setWatched([]);
-      saveStorage(WATCHED_KEY, []);
-      watchedSet.clear();
-      pool = [...fullPool];
-      if (!pool.length) return;
-      window.alert("Bu kategorideki tüm filmleri izledin. İzleme geçmişin sıfırlandı; yeniden film seçiyoruz.");
+    try {
+      const watchedSet = new Set((watchedList || []).map((item) => movieKey(item)));
+      const fullPool = category === "Tamamen Rastgele"
+        ? movies
+        : movies.filter((item) => item.categories?.includes(category));
+
+      let pool = fullPool.filter((item) => !watchedSet.has(movieKey(item)));
+
+      if (!pool.length) {
+        setWatched([]);
+        saveStorage(WATCHED_KEY, []);
+        pool = [...fullPool];
+        if (!pool.length) pool = [...movies];
+        setRollMessage("Bu havuzdaki filmlerin tamamı izlendi. İzleme geçmişin sıfırlandı.");
+      }
+
+      if (!pool.length) {
+        setRollMessage("Film havuzu şu anda boş.");
+        return;
+      }
+
+      const choices = pool.length > 1
+        ? pool.filter((item) => movieKey(item) !== movieKey(movie))
+        : pool;
+      const selectedMovie = choices.length
+        ? choices[Math.floor(Math.random() * choices.length)]
+        : pool[0];
+
+      // Filmi önce ekrana bas: OMDb, ses veya loading akışı zarı engelleyemez.
+      setMovie(selectedMovie);
+      setPoster(null);
+      setPosterLoading(false);
+
+      try { playDiceSound(); } catch (error) { console.warn("Zar sesi atlandı:", error); }
+      void fetchPoster(selectedMovie).catch((error) => {
+        console.warn("Afiş işlemi zar akışını etkilemedi:", error);
+        setPosterLoading(false);
+      });
+    } catch (error) {
+      console.error("Zar atma sırasında beklenmeyen hata:", error);
+
+      // Filtreleme/veri tarafında hata olsa bile yerel katalogdan devam et.
+      try {
+        const fallbackPool = movies.filter(Boolean);
+        if (!fallbackPool.length) {
+          setRollMessage("Film kataloğu şu anda kullanılamıyor.");
+          return;
+        }
+
+        const selectedMovie = fallbackPool[Math.floor(Math.random() * fallbackPool.length)];
+        setMovie(selectedMovie);
+        setPoster(null);
+        setPosterLoading(false);
+        setRollMessage("Kategori filtresi kullanılamadı; genel film havuzundan seçim yapıldı.");
+
+        try { playDiceSound(); } catch (soundError) { console.warn("Zar sesi atlandı:", soundError); }
+        void fetchPoster(selectedMovie).catch(() => setPosterLoading(false));
+      } catch (fallbackError) {
+        console.error("Yerel film yedeği de başarısız:", fallbackError);
+        setPosterLoading(false);
+        setRollMessage("Film seçilemedi. Lütfen tekrar dene.");
+      }
     }
-
-    const choices = pool.length > 1 ? pool.filter((item) => movieKey(item) !== movieKey(movie)) : pool;
-    const selectedMovie = choices.length ? choices[Math.floor(Math.random() * choices.length)] : pool[0];
-
-    // Ses hiçbir koşulda film seçimini engellememeli.
-    try { playDiceSound(); } catch (error) { console.warn("Zar sesi atlandı:", error); }
-    setMovie(selectedMovie);
-    fetchPoster(selectedMovie);
   };
 
   const addToWatchlist = () => {
@@ -233,12 +289,13 @@ function App() {
           </button>
           <div className="scribble scribble-right"><b>↙</b> ve filmin<br/>gelsin!</div>
           <div className="dice-controls" style={{position:"absolute",bottom:22,left:"50%",transform:"translateX(-50%)",display:"flex",alignItems:"center",justifyContent:"center",gap:10,width:"min(94%,760px)",flexWrap:"wrap",zIndex:5}}>
-  <button className="roll-button" style={{position:"static",transform:"none"}} onClick={roll}>🎲 <span>ZARI AT</span></button>
+  <button type="button" className="roll-button" style={{position:"static",transform:"none"}} onClick={roll}>🎲 <span>ZARI AT</span></button>
   <button className="watched-button" onClick={markWatchedAndRoll} disabled={!movie} style={{border:"1px solid rgba(255,255,255,.12)",borderRadius:12,padding:"12px 16px",background:"rgba(8,10,15,.82)",color:"#fff",fontWeight:800,cursor:movie?"pointer":"not-allowed",opacity:movie?1:.45,backdropFilter:"blur(14px)"}}>👁️ Bunu Zaten İzledim</button>
   <button className="sound-toggle" onClick={toggleSound} aria-label={soundEnabled?"Zar sesini kapat":"Zar sesini aç"} style={{width:46,height:46,border:"1px solid rgba(255,255,255,.12)",borderRadius:12,background:"rgba(8,10,15,.82)",color:"#fff",fontSize:18,cursor:"pointer",backdropFilter:"blur(14px)"}}>{soundEnabled?"🔊":"🔇"}</button>
 </div>
         </section>
         <section className={movie?"result-panel has-result":"result-panel"}>
+          {rollMessage && <div style={{maxWidth:760,margin:"0 auto 14px",padding:"10px 14px",borderRadius:10,background:"rgba(180,35,35,.12)",border:"1px solid rgba(255,100,100,.18)",color:"rgba(255,255,255,.8)",textAlign:"center",fontSize:13}}>{rollMessage}</div>}
           {movie ? <div className="movie-result"><div className="poster-art">
               {posterLoading ? (
                 <div className="poster-loading"><span>🎬</span><small>Afiş yükleniyor...</small></div>
