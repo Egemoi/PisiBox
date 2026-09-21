@@ -19,9 +19,55 @@ const posterUrl = (title, year) => {
   return `/api/omdb?${params.toString()}`;
 };
 
-const movies = Object.values([...moviesPart1, ...moviesPart2, ...moviesPart3, ...moviesPart4, ...moviesPart5, ...moviesPart6, ...moviesPart7, ...moviesPart8].reduce((map, item) => { map[item.title] = item; return map; }, {}));
+const movies = Object.values([...moviesPart1, ...moviesPart2, ...moviesPart3, ...moviesPart4, ...moviesPart5, ...moviesPart6, ...moviesPart7, ...moviesPart8].reduce((map, item) => { map[item.title] = withPlatforms(item); return map; }, {}));
 
-const categories = ["Tamamen Rastgele","Korku","Romantik","Aksiyon","Komedi","Dram","Anime","Bilim Kurgu","Fantastik","Gizem","Gerilim","Aile"];
+const categories = ["Tamamen Rastgele","Korku","Romantik","Aksiyon","Komedi","Dram","Anime","Bilim Kurgu","Fantastik","Gizem","Gerilim","Aile"];\nconst platformOverrides = {
+  "Sicario": ["Netflix", "Prime Video"],
+  "Toy Story": ["Disney+"],
+  "Spirited Away": ["MUBI"],
+  "The Grand Budapest Hotel": ["MUBI"],
+  "The Menu": ["BluTV", "Prime Video"],
+  "The Batman": ["Prime Video"],
+  "The Super Mario Bros. Movie": ["Prime Video"],
+  "Encanto": ["Disney+"],
+  "Coco": ["Disney+"],
+  "Soul": ["Disney+"],
+  "Turning Red": ["Disney+"],
+  "Luca": ["Disney+"],
+  "Moana": ["Disney+"],
+  "Frozen": ["Disney+"],
+  "Frozen II": ["Disney+"],
+  "Inside Out": ["Disney+"],
+  "Ratatouille": ["Disney+"],
+  "Finding Nemo": ["Disney+"],
+  "Finding Dory": ["Disney+"],
+  "The Incredibles": ["Disney+"],
+  "The Incredibles 2": ["Disney+"],
+  "Up": ["Disney+"],
+  "WALL-E": ["Disney+"],
+  "Big Hero 6": ["Disney+"],
+  "Zootopia": ["Disney+"],
+  "Soul": ["Disney+"],
+  "Black Panther": ["Disney+"],
+  "Avengers: Endgame": ["Disney+"],
+  "Avengers: Infinity War": ["Disney+"],
+  "Guardians of the Galaxy": ["Disney+"],
+  "Guardians of the Galaxy Vol. 2": ["Disney+"],
+  "Thor: Ragnarok": ["Disney+"],
+  "Iron Man": ["Disney+"],
+  "Iron Man 2": ["Disney+"],
+  "Iron Man 3": ["Disney+"],
+  "Captain America: The Winter Soldier": ["Disney+"],
+  "Captain America: Civil War": ["Disney+"],
+  "Doctor Strange": ["Disney+"],
+  "Thor": ["Disney+"],
+  "Thor: The Dark World": ["Disney+"],
+  "The Avengers": ["Disney+"]
+};
+const withPlatforms = (item) => {
+  const platforms = platformOverrides[item.title];
+  return platforms ? { ...item, platforms } : item;
+};
 const WATCHLIST_KEY = "pisibox-watchlist";
 const WATCHED_KEY = "pisibox-watched";
 const SOUND_KEY = "pisibox-dice-sound";
@@ -365,17 +411,29 @@ function App() {
                 <div className="poster-fallback"><span>🎬</span><small>Afiş bulunamadı</small></div>
               )}
               <strong>⭐ {movie.rating}</strong>
-            </div><div className="result-copy"><span className="result-kicker">{movie.categories.join(" · ")}</span><h2>{movie.title}</h2><small>{movie.year}</small><p>{movie.summary}</p><div style={{marginTop:16}}>
-  <div style={{fontSize:12,color:"rgba(255,255,255,.55)",fontWeight:600,marginBottom:8}}>Nerede İzlenir?</div>
-  <div style={{display:"flex",flexWrap:"wrap",gap:8,alignItems:"center"}}>
-    <span style={{display:"inline-flex",alignItems:"center",gap:6,padding:"4px 10px",borderRadius:999,fontSize:12,fontWeight:600,background:"rgba(255,255,255,.05)",border:"1px solid rgba(255,255,255,.1)",color:"rgba(255,255,255,.82)"}}><i style={{width:6,height:6,borderRadius:"50%",background:"#e50914",display:"inline-block"}} />Netflix</span>
-    <span style={{display:"inline-flex",alignItems:"center",gap:6,padding:"4px 10px",borderRadius:999,fontSize:12,fontWeight:600,background:"rgba(30,144,255,.07)",border:"1px solid rgba(255,255,255,.1)",color:"rgba(255,255,255,.82)"}}><i style={{width:6,height:6,borderRadius:"50%",background:"#1e90ff",display:"inline-block"}} />Prime Video</span>
-    <span style={{display:"inline-flex",alignItems:"center",gap:6,padding:"4px 10px",borderRadius:999,fontSize:12,fontWeight:600,background:"rgba(70,140,255,.07)",border:"1px solid rgba(255,255,255,.1)",color:"rgba(255,255,255,.82)"}}><i style={{width:6,height:6,borderRadius:"50%",background:"#5b9cff",display:"inline-block"}} />Disney+</span>
-    <span style={{display:"inline-flex",alignItems:"center",gap:6,padding:"4px 10px",borderRadius:999,fontSize:12,fontWeight:600,background:"rgba(40,180,130,.06)",border:"1px solid rgba(255,255,255,.1)",color:"rgba(255,255,255,.82)"}}><i style={{width:6,height:6,borderRadius:"50%",background:"#35c98b",display:"inline-block"}} />BluTV</span>
-    <span style={{display:"inline-flex",alignItems:"center",gap:6,padding:"4px 10px",borderRadius:999,fontSize:12,fontWeight:600,background:"rgba(180,80,255,.07)",border:"1px solid rgba(255,255,255,.1)",color:"rgba(255,255,255,.82)"}}><i style={{width:6,height:6,borderRadius:"50%",background:"#b65cff",display:"inline-block"}} />MUBI</span>
+            </div><div className="result-copy"><span className="result-kicker">{movie.categories.join(" · ")}</span><h2>{movie.title}</h2><small>{movie.year}</small><p>{movie.summary}</p>{Array.isArray(movie.platforms) && movie.platforms.length > 0 && (
+  <div style={{marginTop:16}}>
+    <div style={{fontSize:12,color:"rgba(255,255,255,.55)",fontWeight:600,marginBottom:8}}>Nerede İzlenir?</div>
+    <div style={{display:"flex",flexWrap:"wrap",gap:8,alignItems:"center"}}>
+      {movie.platforms.map((platform) => {
+        const styles = {
+          "Netflix": ["#e50914","rgba(229,9,20,.07)"],
+          "Prime Video": ["#1e90ff","rgba(30,144,255,.07)"],
+          "Disney+": ["#5b9cff","rgba(91,156,255,.07)"],
+          "BluTV": ["#35c98b","rgba(53,201,139,.06)"],
+          "MUBI": ["#b65cff","rgba(182,92,255,.07)"]
+        };
+        const [dot, background] = styles[platform] || ["#aeb7c6","rgba(255,255,255,.05)"];
+        return (
+          <span key={platform} style={{display:"inline-flex",alignItems:"center",gap:6,padding:"4px 10px",borderRadius:999,fontSize:12,fontWeight:600,background,border:"1px solid rgba(255,255,255,.1)",color:"rgba(255,255,255,.82)"}}>
+            <i style={{width:6,height:6,borderRadius:"50%",background:dot,display:"inline-block"}} />{platform}
+          </span>
+        );
+      })}
+    </div>
+    <p style={{margin:"8px 0 0",fontSize:11,color:"rgba(255,255,255,.42)"}}>Platform etiketleri keşif amaçlıdır; güncel katalog uygunluğu doğrulanmamıştır.</p>
   </div>
-  <p style={{margin:"8px 0 0",fontSize:11,color:"rgba(255,255,255,.42)"}}>Platform etiketleri keşif amaçlıdır; güncel katalog uygunluğu doğrulanmamıştır.</p>
-</div>
+)}
 <div style={{display:"flex",flexWrap:"wrap",gap:12,alignItems:"center",marginTop:18}}>
   <button className="again" onClick={roll}>🎲 Bir daha at</button>
   <button onClick={isInWatchlist ? () => removeFromWatchlist(movie) : addToWatchlist} style={{padding:"10px 16px",borderRadius:12,border:"1px solid rgba(255,255,255,.15)",background:"rgba(255,255,255,.08)",color:"#fff",fontWeight:500,cursor:"pointer",transition:"all .2s ease",backdropFilter:"blur(12px)"}} onMouseEnter={(e)=>e.currentTarget.style.background="rgba(255,255,255,.16)"} onMouseLeave={(e)=>e.currentTarget.style.background="rgba(255,255,255,.08)"}>{isInWatchlist ? "🔖 Listeden Çıkar" : "🔖 Listeme Ekle"}</button>
