@@ -37,55 +37,40 @@ function App() {
   const [category, setCategory] = useState("Tamamen Rastgele");
   const [movie, setMovie] = useState(null);
 
-  const available = useMemo(() => {
-    if (category === "Tamamen Rastgele") return movies;
-    return movies.filter((item) => item.categories.includes(category));
-  }, [category]);
+  const available = useMemo(() => category === "Tamamen Rastgele" ? movies : movies.filter((item) => item.categories.includes(category)), [category]);
 
   const roll = () => {
     if (!available.length) return;
-    const current = movie?.title;
-    const choices = available.length > 1 ? available.filter((item) => item.title !== current) : available;
+    const choices = available.length > 1 ? available.filter((item) => item.title !== movie?.title) : available;
     setMovie(choices[Math.floor(Math.random() * choices.length)]);
   };
 
+  const icon = (item) => ({ "Tamamen Rastgele":"🎲","Korku":"☠","Romantik":"♥","Aksiyon":"✦","Komedi":"●","Dram":"◈","Anime":"✦","Bilim Kurgu":"◉","Fantastik":"♠","Gizem":"⌕","Gerilim":"〰","Aile":"♟" }[item] || "•");
+
   return (
     <div className="dice-app">
-      <main className="dice-main">
-        <div className="brand-small">Pisi<span>Box</span></div>
-        <p className="eyebrow">BUGÜN NE İZLESEM?</p>
-        <h1>Zarı at.<br /><span>Filmini bul.</span></h1>
-        <p className="intro">Karar vermeyi bırak. Bir kategori seç veya tamamen şansa bırak.</p>
-
-        <div className="category-picker" aria-label="Film kategorisi">
-          {categories.map((item) => (
-            <button key={item} className={category === item ? "selected" : ""} onClick={() => setCategory(item)}>
-              {item}
-            </button>
-          ))}
-        </div>
-
-        <button className="dice-button" onClick={roll} aria-label="Rastgele film seç">
-          <span>🎲</span>
-        </button>
-        <div className="roll-text">Zara bas</div>
-
-        {movie && (
-          <section className="movie-result">
-            <div className="result-poster"><span>🎬</span><strong>⭐ {movie.rating}</strong></div>
-            <div className="result-info">
-              <span className="result-type">{movie.categories.join(" · ")}</span>
-              <h2>{movie.title}</h2>
-              <small>{movie.year}</small>
-              <p>{movie.summary}</p>
-              <button className="again" onClick={roll}>🎲 Bir daha at</button>
-            </div>
-          </section>
-        )}
+      <div className="ambient ambient-one" /><div className="ambient ambient-two" />
+      <header className="topbar">
+        <div className="brand-lockup"><div className="brand-mark">▶</div><div><div className="brand-name">Pisi<span>Box</span></div><small>FİLM HER ZAMAN İYİ BİR FİKİRDİR.</small></div></div>
+        <nav><button>⌂ <span>Ana Sayfa</span></button><button onClick={() => {setCategory("Tamamen Rastgele");setMovie(null)}}>♡ <span>Rastgele</span></button><button className="theme-button">☾</button></nav>
+      </header>
+      <main>
+        <section className="hero-copy"><div className="mini-kicker">NE İZLESEM DİYE DÜŞÜNME.</div><h1>ZARI AT,<br /><em>FİLMİNİ BUL.</em></h1><p>Karar vermeyi bırak. Bir kategori seç veya tamamen şansa bırak.</p></section>
+        <section className="categories">{categories.map((item)=><button key={item} className={category===item?"category selected":"category"} onClick={()=>setCategory(item)}><span>{icon(item)}</span>{item}</button>)}</section>
+        <section className="dice-stage">
+          <div className="scribble scribble-left">Zara bas <b>↘</b></div>
+          <button className="dice" onClick={roll} aria-label="Zarı at">
+            <div className="dice-face face-front"><i/><i/><i/><i/><i/></div><div className="dice-face face-side"><i/><i/><i/><i/></div><div className="dice-face face-top"><i/><i/><i/></div>
+          </button>
+          <div className="scribble scribble-right"><b>↙</b> ve filmin<br/>gelsin!</div>
+          <button className="roll-button" onClick={roll}>🎲 <span>ZARI AT</span></button>
+        </section>
+        <section className={movie?"result-panel has-result":"result-panel"}>
+          {movie ? <div className="movie-result"><div className="poster-art"><span>🎬</span><strong>⭐ {movie.rating}</strong></div><div className="result-copy"><span className="result-kicker">{movie.categories.join(" · ")}</span><h2>{movie.title}</h2><small>{movie.year}</small><p>{movie.summary}</p><button className="again" onClick={roll}>🎲 Bir daha at</button></div></div> : <div className="empty-result"><div className="film-icon">▣</div><h3>Henüz film yok.</h3><p>Zarı atarak senin için bir film önerelim!</p></div>}
+        </section>
       </main>
-      <footer className="dice-footer">PisiBox · Sadece keşfet, karar vermek zorunda kalma.</footer>
+      <footer>“İyi filmler, zor zamanları daha katlanılabilir kılar.”</footer>
     </div>
   );
 }
-
 export default App;
