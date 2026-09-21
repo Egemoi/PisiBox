@@ -60,7 +60,11 @@ function App() {
         <section className="dice-stage">
           <div className="scribble scribble-left">Zara bas <b>↘</b></div>
           <button className="dice" onClick={roll} aria-label="Zarı at">
-            <div className="dice-face face-front"><i/><i/><i/><i/><i/></div><div className="dice-face face-side"><i/><i/><i/><i/></div><div className="dice-face face-top"><i/><i/><i/></div>
+            <span className="die-cube">
+              <span className="die-face die-front"><i/><i/><i/><i/><i/><i/></span>
+              <span className="die-face die-right"><i/><i/><i/><i/><i/><i/></span>
+              <span className="die-face die-top"><i/><i/><i/><i/><i/><i/></span>
+            </span>
           </button>
           <div className="scribble scribble-right"><b>↙</b> ve filmin<br/>gelsin!</div>
           <button className="roll-button" onClick={roll}>🎲 <span>ZARI AT</span></button>
