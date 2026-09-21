@@ -53,6 +53,8 @@ function App() {
   const [watched, setWatched] = useState(() => readStorage(WATCHED_KEY));
   const [watchlistOpen, setWatchlistOpen] = useState(false);
   const [trailerMovie, setTrailerMovie] = useState(null);
+  const [trailerId, setTrailerId] = useState("");
+  const [trailerLoading, setTrailerLoading] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(() => {
     try { const saved = window.localStorage.getItem(SOUND_KEY); return saved === null ? true : saved === "true"; } catch { return true; }
   });
@@ -149,6 +151,67 @@ function App() {
       }, 300);
     } catch (error) {
       console.warn("Zar sesi kullanılamadı; film seçimi devam ediyor:", error);
+    }
+  };
+
+  const resolveTrailerId = async (selectedMovie) => {
+    if (!selectedMovie?.title) return null;
+
+    const cacheKey = "pisibox-trailer-" + movieKey(selectedMovie);
+    try {
+      const cached = window.localStorage.getItem(cacheKey);
+      if (cached) return cached;
+    } catch {}
+
+    try {
+      if (!window.movieTrailer) {
+        await new Promise((resolve, reject) => {
+          const existing = document.querySelector('script[data-pisibox-movie-trailer]');
+          if (existing) {
+            existing.addEventListener("load", resolve, { once: true });
+            existing.addEventListener("error", reject, { once: true });
+            return;
+          }
+          const script = document.createElement("script");
+          script.src = "https://unpkg.com/movie-trailer";
+          script.async = true;
+          script.dataset.pisiboxMovieTrailer = "true";
+          script.onload = resolve;
+          script.onerror = reject;
+          document.head.appendChild(script);
+        });
+      }
+
+      if (typeof window.movieTrailer !== "function") return null;
+
+      const result = await window.movieTrailer(selectedMovie.title, {
+        year: String(selectedMovie.year || ""),
+        id: true
+      });
+
+      const id = Array.isArray(result) ? result.find(Boolean) : result;
+      if (!id || typeof id !== "string") return null;
+
+      try { window.localStorage.setItem(cacheKey, id); } catch {}
+      return id;
+    } catch (error) {
+      console.warn("Fragman ID alınamadı:", error);
+      return null;
+    }
+  };
+
+  const openTrailer = async (selectedMovie) => {
+    if (!selectedMovie) return;
+
+    setTrailerMovie(selectedMovie);
+    setTrailerId("");
+    setTrailerLoading(true);
+
+    try {
+      const id = await resolveTrailerId(selectedMovie);
+      setTrailerId(id || "");
+    } finally {
+      setTrailerLoading(false);
     }
   };
 
@@ -256,14 +319,11 @@ function App() {
     roll(next);
   };
 
-  const trailerSearchQuery = trailerMovie
-    ? encodeURIComponent(`${trailerMovie.title} ${trailerMovie.year} fragman trailer`)
-    : "";
-  const trailerUrl = trailerMovie
-    ? `https://www.youtube-nocookie.com/embed?listType=search&list=${trailerSearchQuery}`
+  const trailerUrl = trailerMovie && trailerId
+    ? `https://www.youtube-nocookie.com/embed/${trailerId}?autoplay=1&rel=0`
     : null;
-  const youtubeSearchUrl = trailerMovie
-    ? `https://www.youtube.com/results?search_query=${trailerSearchQuery}`
+  const youtubeVideoUrl = trailerMovie && trailerId
+    ? `https://www.youtube.com/watch?v=${trailerId}`
     : null;
 
   const icon = (item) => ({ "Tamamen Rastgele":"🎲","Korku":"💀","Romantik":"❤️","Aksiyon":"💥","Komedi":"🙂","Dram":"🎭","Anime":"🐱","Bilim Kurgu":"🪐","Fantastik":"🧙","Gizem":"🔍","Gerilim":"〽️","Aile":"👨‍👩‍👧‍👦" }[item] || "•");
@@ -317,7 +377,7 @@ function App() {
 <div className="result-actions">
   <button className="again" onClick={roll}>🎲 Bir daha at</button>
   <button className="watchlist-action" onClick={isInWatchlist ? () => removeFromWatchlist(movie) : addToWatchlist}>{isInWatchlist ? "🔖 Listeden Çıkar" : "🔖 Listeme Ekle"}</button>
-  <button className="trailer-action" onClick={() => setTrailerMovie(movie)}>🎬 Fragmanı İzle</button>
+  <button className="trailer-action" onClick={() => openTrailer(movie)}>🎬 Fragmanı İzle</button>
 </div></div></div> : <div className="empty-result"><div className="film-icon">▣</div><h3>Henüz film yok.</h3><p>Zarı atarak senin için bir film önerelim!</p></div>}
         </section>
 {dailyMovie && (
@@ -497,23 +557,42 @@ function App() {
         </div>
       )}
 
-      {trailerMovie && trailerUrl && (
+      {trailerMovie && (
         <div className="info-modal-backdrop" role="presentation" onClick={() => setTrailerMovie(null)}>
           <section className="info-modal trailer-modal" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()} style={{maxWidth:1000,padding:18}}>
             <button className="modal-close" onClick={() => setTrailerMovie(null)} aria-label="Fragmanı kapat">×</button>
             <span className="content-kicker">🎬 FRAGMAN</span>
             <h2 style={{marginBottom:14}}>{trailerMovie.title}</h2>
-            <div style={{position:"relative",aspectRatio:"16/9",overflow:"hidden",borderRadius:14,background:"#000"}}>
-              <iframe title={`${trailerMovie.title} fragmanı`} src={trailerUrl} style={{width:"100%",height:"100%",border:0}} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
-            </div>
-            <a
-              href={youtubeSearchUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10,marginTop:14,minHeight:52,padding:"12px 18px",borderRadius:13,background:"#ff0000",color:"#fff",fontWeight:900,textDecoration:"none",fontSize:16,boxShadow:"0 10px 30px rgba(255,0,0,.22)"}}
-            >
-              ▶ YouTube'da İzle
-            </a>
+
+            {trailerLoading ? (
+              <div style={{minHeight:220,display:"grid",placeItems:"center",borderRadius:14,background:"rgba(0,0,0,.45)",color:"rgba(255,255,255,.75)",fontWeight:700}}>
+                🎬 Fragman yükleniyor...
+              </div>
+            ) : trailerUrl ? (
+              <>
+                <div style={{position:"relative",aspectRatio:"16/9",overflow:"hidden",borderRadius:14,background:"#000"}}>
+                  <iframe
+                    title={`${trailerMovie.title} fragmanı`}
+                    src={trailerUrl}
+                    style={{width:"100%",height:"100%",border:0}}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                  />
+                </div>
+                <a
+                  href={youtubeVideoUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10,marginTop:14,minHeight:52,padding:"12px 18px",borderRadius:13,background:"#ff0000",color:"#fff",fontWeight:900,textDecoration:"none",fontSize:16,boxShadow:"0 10px 30px rgba(255,0,0,.22)"}}
+                >
+                  ▶ YouTube'da İzle
+                </a>
+              </>
+            ) : (
+              <div style={{padding:22,textAlign:"center",borderRadius:14,background:"rgba(0,0,0,.35)",color:"rgba(255,255,255,.75)"}}>
+                <p style={{marginTop:0}}>Bu film için doğrudan YouTube fragman ID'si bulunamadı.</p>
+              </div>
+            )}
           </section>
         </div>
       )}
