@@ -74,14 +74,6 @@ function App() {
     fetchPoster(selectedMovie);
   };
 
-    const choices = available.length > 1
-      ? available.filter((item) => item.title !== movie?.title)
-      : available;
-
-    const selectedMovie = choices[Math.floor(Math.random() * choices.length)];
-    setMovie(selectedMovie);
-    await fetchPoster(selectedMovie);
-  };
 
   const icon = (item) => ({ "Tamamen Rastgele":"🎲","Korku":"💀","Romantik":"❤️","Aksiyon":"💥","Komedi":"🙂","Dram":"🎭","Anime":"🐱","Bilim Kurgu":"🪐","Fantastik":"🧙","Gizem":"🔍","Gerilim":"〽️","Aile":"👨‍👩‍👧‍👦" }[item] || "•");
 
