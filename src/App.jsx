@@ -59,6 +59,7 @@ function App() {
   const [authError, setAuthError] = useState("");
   const [authLoading, setAuthLoading] = useState(false);
   const [user, setUser] = useState(null);
+  const [authToken, setAuthToken] = useState(() => localStorage.getItem("pisibox_session") || "");
   const [profileOpen, setProfileOpen] = useState(false);
   const [profileName, setProfileName] = useState("");
   const [profileAvatar, setProfileAvatar] = useState("");
@@ -84,13 +85,17 @@ function App() {
   );
 
   useEffect(() => {
-    if (!supabase) return;
-    supabase.auth.getSession().then(({ data }) => setUser(data.session?.user ?? null));
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
+    if (!supabase || !authToken) return;
+    supabase.rpc("pisibox_get_session", { p_token: authToken }).then(({ data, error }) => {
+      if (error || !data) {
+        localStorage.removeItem("pisibox_session");
+        setAuthToken("");
+        setUser(null);
+        return;
+      }
+      setUser({ id: data.id, user_metadata: { display_name: data.display_name, username: data.username, avatar_url: data.avatar_url }, email: "" });
     });
-    return () => listener.subscription.unsubscribe();
-  }, []);
+  }, [authToken]);
 
   const openProfile = () => {
     if (!user) return;
@@ -119,33 +124,23 @@ function App() {
 
   const saveProfile = async (event) => {
     event.preventDefault();
-    if (!supabase || !user) return;
+    if (!supabase || !authToken) return;
     setProfileError("");
     setProfileLoading(true);
     try {
-      let avatarUrl = typeof profileAvatar === "string" ? profileAvatar : (user.user_metadata?.avatar_url || "");
-      if (profileAvatar && typeof profileAvatar !== "string") {
-        const ext = profileAvatar.name.split(".").pop()?.toLowerCase() || "jpg";
-        const path = user.id + "/avatar-" + Date.now() + "." + ext;
-        const { error: uploadError } = await supabase.storage.from("avatars").upload(path, profileAvatar, {
-          upsert: true,
-          contentType: profileAvatar.type,
-          cacheControl: "3600",
-        });
-        if (uploadError) throw uploadError;
-        const { data } = supabase.storage.from("avatars").getPublicUrl(path);
-        avatarUrl = data.publicUrl;
-      }
-      const { data, error } = await supabase.auth.updateUser({
-        data: { display_name: profileName.trim() || "PisiBox Kullanıcısı", avatar_url: avatarUrl },
+      const avatarUrl = typeof profileAvatar === "string" ? profileAvatar : profilePreview;
+      const { data, error } = await supabase.rpc("pisibox_update_profile", {
+        p_token: authToken,
+        p_display_name: profileName,
+        p_avatar_url: avatarUrl || "",
       });
       if (error) throw error;
-      setUser(data.user);
-      setProfileAvatar(avatarUrl);
-      setProfilePreview(avatarUrl);
+      setUser({ id: data.id, user_metadata: { display_name: data.display_name, username: data.username, avatar_url: data.avatar_url }, email: "" });
+      setProfileAvatar(data.avatar_url || "");
+      setProfilePreview(data.avatar_url || "");
       setProfileOpen(false);
     } catch (error) {
-      setProfileError(error.message || "Profil kaydedilemedi. Avatar depolamasının kurulduğundan emin ol.");
+      setProfileError(error.message || "Profil kaydedilemedi.");
     } finally {
       setProfileLoading(false);
     }
@@ -163,33 +158,23 @@ function App() {
     event.preventDefault();
     setAuthError("");
     if (!supabase) {
-      setAuthError("Giriş sistemi henüz bağlanmadı. Supabase ayarlarını eklememiz gerekiyor.");
+      setAuthError("Veritabanı bağlantısı kurulamadı.");
       return;
     }
     setAuthLoading(true);
     try {
       const username = authUsername.trim().toLowerCase();
-      const internalEmail = username + "@accounts.pisibox.local";
-      if (authMode === "register") {
-        const { data, error } = await supabase.auth.signUp({
-          email: internalEmail,
-          password: authPassword,
-          options: { data: { display_name: authName.trim() || username, username } },
-        });
-        if (error) throw error;
-        if (!data.session) {
-          setAuthError("Kayıt oluşturulamadı. Supabase Email provider ayarını kontrol et.");
-        } else {
-          setAuthMode(null);
-        }
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email: internalEmail,
-          password: authPassword,
-        });
-        if (error) throw error;
-        setAuthMode(null);
-      }
+      const rpcName = authMode === "register" ? "pisibox_register" : "pisibox_login";
+      const params = authMode === "register"
+        ? { p_username: username, p_password: authPassword, p_display_name: authName.trim() || username }
+        : { p_username: username, p_password: authPassword };
+      const { data, error } = await supabase.rpc(rpcName, params);
+      if (error) throw error;
+      if (!data?.token) throw new Error("Hesap oluşturulamadı.");
+      localStorage.setItem("pisibox_session", data.token);
+      setAuthToken(data.token);
+      setUser({ id: data.id, user_metadata: { display_name: data.display_name, username: data.username, avatar_url: data.avatar_url }, email: "" });
+      setAuthMode(null);
     } catch (error) {
       setAuthError(error.message || "Bir hata oluştu.");
     } finally {
@@ -198,7 +183,11 @@ function App() {
   };
 
   const logout = async () => {
-    if (supabase) await supabase.auth.signOut();
+    if (supabase && authToken) await supabase.rpc("pisibox_logout", { p_token: authToken });
+    localStorage.removeItem("pisibox_session");
+    setAuthToken("");
+    setUser(null);
+    setProfileOpen(false);
   };
 
   const sendMessage = (event) => {
