@@ -294,14 +294,15 @@ function App() {
     try { window.localStorage.setItem(SOUND_KEY, String(next)); } catch {}
   };
 
-  const roll = (watchedList = watched) => {
+  const roll = (watchedList = watched, selectedCategory = category) => {
     setRollMessage("");
 
     try {
+      const activeCategory = selectedCategory || "Tamamen Rastgele";
       const watchedSet = new Set((watchedList || []).map((item) => movieKey(item)));
-      const fullPool = category === "Tamamen Rastgele"
+      const fullPool = activeCategory === "Tamamen Rastgele"
         ? movies
-        : movies.filter((item) => item.categories?.includes(category));
+        : movies.filter((item) => Array.isArray(item.categories) && item.categories.includes(activeCategory));
 
       let pool = fullPool.filter((item) => !watchedSet.has(movieKey(item)));
 
@@ -357,7 +358,7 @@ function App() {
       } catch (fallbackError) {
         console.error("Yerel film yedeği de başarısız:", fallbackError);
         setPosterLoading(false);
-        setRollMessage("Film seçilemedi. Lütfen tekrar dene.");
+        setRollMessage("Seçilen kategori için film bulunamadı. Lütfen başka bir kategori dene.");
       }
     }
   };
@@ -389,7 +390,7 @@ function App() {
     const next = watched.some((item) => movieKey(item) === movieKey(movie)) ? watched : [...watched, entry];
     setWatched(next);
     saveStorage(WATCHED_KEY, next);
-    roll(next);
+    roll(next, category);
   };
 
   const trailerUrl = trailerMovie && trailerId
@@ -410,7 +411,7 @@ function App() {
       </header>
       <main>
         <section className="hero-copy"><div className="mini-kicker">NE İZLESEM DİYE DÜŞÜNME.</div><h1>ZARI AT,<br /><em>FİLMİNİ BUL.</em></h1><p>Karar vermeyi bırak. Bir kategori seç veya tamamen şansa bırak.</p></section>
-        <section className="categories">{categories.map((item)=><button key={item} className={category===item?"category selected":"category"} onClick={()=>setCategory(item)}><span>{icon(item)}</span>{item}</button>)}</section>
+        <section className="categories">{categories.map((item)=><button key={item} className={category===item?"category selected":"category"} onClick={()=>{setCategory(item);setMovie(null);setRollMessage("");}}><span>{icon(item)}</span>{item}</button>)}</section>
         <section className="dice-stage">
           <div className="scribble scribble-left">Zara bas <b>↘</b></div>
           <button className="dice" onClick={roll} aria-label="Zarı at">
